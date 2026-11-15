@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.config import Settings
 from app.main import create_app
 from app.models import ExtractedMedication
-from app.services.ai import WeeklySummary
+from app.services.ai import VoiceNote, WeeklySummary
 from app.services.emailer import EmailFailed
 from app.store import InMemoryStore
 
@@ -35,6 +35,8 @@ class FakeAi:
     calls: int = 0
     last_facts: str = ""
     last_language: str = ""
+    voice: VoiceNote = field(default_factory=VoiceNote)
+    last_doses: str = ""
 
     def extract_medications(self, image: bytes, mime_type: str) -> list[ExtractedMedication]:
         self.calls += 1
@@ -45,6 +47,11 @@ class FakeAi:
         self.last_facts = facts
         self.last_language = language
         return WeeklySummary(summary="A good week overall.", doctor_questions=["Any changes?"])
+
+    def understand_voice(self, audio: bytes, mime_type: str, doses: str) -> VoiceNote:
+        self.calls += 1
+        self.last_doses = doses
+        return self.voice
 
 
 @pytest.fixture

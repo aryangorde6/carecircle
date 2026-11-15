@@ -22,6 +22,7 @@ from app.routes import (
     medications,
     tasks,
     today,
+    voice,
 )
 from app.security import SECURITY_HEADERS, RateLimiter
 from app.services.ai import AiBudget, AiModel, AiService
@@ -138,7 +139,7 @@ def create_app(
     app.mount(
         "/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static"
     )
-    for module in (auth, today, medications, appointments, circle, card, insights, tasks):
+    for module in (auth, today, voice, medications, appointments, circle, card, insights, tasks):
         app.include_router(module.router)
     return app
 

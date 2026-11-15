@@ -76,6 +76,29 @@
   {% endif %}
 </section>
 
+{% if voice_enabled %}
+<section class="card voice-card" id="voice" aria-labelledby="voice-title">
+  <h2 id="voice-title">Or just say it</h2>
+  <p>Tell CareCircle what you took and how you feel, in any language. For example: <span lang="hi">“सुबह की दवाई ले ली, थोड़ा चक्कर आ रहा है”</span> or “I took my morning tablets”.</p>
+  <form method="post" action="/voice" enctype="multipart/form-data" class="stack" data-voice>
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="voice-controls" data-voice-controls hidden>
+      <button type="button" class="btn btn-primary btn-big" data-voice-start><span aria-hidden="true">🎤</span> Start speaking</button>
+      <button type="button" class="btn btn-secondary btn-big" data-voice-stop hidden><span aria-hidden="true">■</span> Stop and check</button>
+      <p class="hint" data-voice-status role="status" aria-live="polite"></p>
+    </div>
+    <div class="voice-file stack" data-voice-file>
+      <div class="field">
+        <label for="voice-audio">Record or choose a voice note</label>
+        <input id="voice-audio" name="audio" type="file" accept="audio/*" capture required>
+      </div>
+      <button type="submit" class="btn btn-secondary" data-busy-text="Listening…">Send voice note</button>
+    </div>
+  </form>
+  <p class="hint">Gemini listens and suggests. Nothing is saved until you check it.</p>
+</section>
+{% endif %}
+
 {% set feeling_icons = {'good': '🙂', 'okay': '😐', 'unwell': '🙁'} %}
 <section class="card checkin-card" id="checkin" aria-labelledby="checkin-title">
   <h2 id="checkin-title">{% if member.is_elder %}How are you feeling today?{% else %}How is {{ circle.elder_name }} feeling today?{% endif %}</h2>

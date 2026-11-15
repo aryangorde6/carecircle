@@ -108,6 +108,6 @@ SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(self), microphone=(), geolocation=()",
+    "Permissions-Policy": "camera=(self), microphone=(self), geolocation=()",
     "Cross-Origin-Opener-Policy": "same-origin",
 }

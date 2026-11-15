@@ -9,10 +9,10 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.models import DoseStatus, Feeling
+from app.models import CheckIn, Circle, DoseStatus, Feeling, Member
 from app.services.care import NotFound, PermissionDenied, summarise_adherence
 from app.services.emailer import EmailFailed
-from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
+from app.web import CsrfDep, MemberDep, Services, ServicesDep, flash, redirect, render
 
 router = APIRouter()
 
@@ -48,6 +48,7 @@ def today(request: Request, member: MemberDep, services: ServicesDep) -> HTMLRes
         zone=zone,
         now=now,
         today=local_today,
+        voice_enabled=services.ai.enabled and member.can_edit,
     )
 
 
@@ -97,38 +98,49 @@ def check_in(
         return redirect("/today")
     message = "Thank you. The circle can see how today is going."
     if tell and feeling == Feeling.UNWELL:
-        to = sorted(
-            {
-                str(m.email)
-                for m in care.list_members(circle.id)
-                if m.email and m.notify and m.id != member.id
-            }
-        )
-        if not to:
-            message += " Nobody else in the circle has an email address yet."
-        elif not services.login_limiter.hit(f"checkin-email:{circle.id}"):
-            message += " The circle was emailed a few minutes ago, so no new email was sent."
-        else:
-            body = "\n".join(
-                [
-                    f'{circle.elder_name} marked today as "Not well" in CareCircle.',
-                    *([f"Note: {entry.note}"] if entry.note else []),
-                    f"Shared by {member.name} at {now.astimezone(zone):%I:%M %p}.",
-                    "",
-                    "A call or a visit could help.",
-                    f"Open CareCircle: {services.settings.public_base_url}/today",
-                    "",
-                    "In an emergency, call your local emergency number (112 in India).",
-                ]
-            )
-            try:
-                services.reminders.emailer.send(
-                    to, f"{circle.elder_name} is not feeling well today", body
-                )
-            except EmailFailed:
-                flash(request, "The email could not be sent just now.", "error")
-            else:
-                people = "1 person" if len(to) == 1 else f"{len(to)} people"
-                message += f" We emailed {people} in the circle."
+        message += share_bad_day(request, services, circle, member, entry, now)
     flash(request, message, "success")
     return redirect("/today#checkin")
+
+
+def share_bad_day(
+    request: Request,
+    services: Services,
+    circle: Circle,
+    member: Member,
+    entry: CheckIn,
+    now: datetime,
+) -> str:
+    """Email the circle about a bad day, only because the elder chose to. Returns a status note."""
+    care = services.care
+    zone = ZoneInfo(circle.timezone)
+    to = sorted(
+        {
+            str(m.email)
+            for m in care.list_members(circle.id)
+            if m.email and m.notify and m.id != member.id
+        }
+    )
+    if not to:
+        return " Nobody else in the circle has an email address yet."
+    if not services.login_limiter.hit(f"checkin-email:{circle.id}"):
+        return " The circle was emailed a few minutes ago, so no new email was sent."
+    body = "\n".join(
+        [
+            f'{circle.elder_name} marked today as "Not well" in CareCircle.',
+            *([f"Note: {entry.note}"] if entry.note else []),
+            f"Shared by {member.name} at {now.astimezone(zone):%I:%M %p}.",
+            "",
+            "A call or a visit could help.",
+            f"Open CareCircle: {services.settings.public_base_url}/today",
+            "",
+            "In an emergency, call your local emergency number (112 in India).",
+        ]
+    )
+    try:
+        services.reminders.emailer.send(to, f"{circle.elder_name} is not feeling well today", body)
+    except EmailFailed:
+        flash(request, "The email could not be sent just now.", "error")
+        return ""
+    people = "1 person" if len(to) == 1 else f"{len(to)} people"
+    return f" We emailed {people} in the circle."

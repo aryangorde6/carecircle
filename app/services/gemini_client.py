@@ -10,7 +10,13 @@ from google import genai
 from google.genai import types
 
 from app.models import ExtractedMedication
-from app.services.ai import PRESCRIPTION_PROMPT, SUMMARY_PROMPT, WeeklySummary
+from app.services.ai import (
+    PRESCRIPTION_PROMPT,
+    SUMMARY_PROMPT,
+    VOICE_PROMPT,
+    VoiceNote,
+    WeeklySummary,
+)
 
 # The model only returns data. It is given no tools and can never call any.
 NO_TOOLS = types.AutomaticFunctionCallingConfig(disable=True)
@@ -69,3 +75,26 @@ class GeminiModel:
         if isinstance(parsed, WeeklySummary):
             return parsed
         return WeeklySummary.model_validate_json(response.text or "{}")
+
+    def understand_voice(self, audio: bytes, mime_type: str, doses: str) -> VoiceNote:
+        response = self._client.models.generate_content(
+            model=self._model,
+            contents=[
+                types.Part.from_bytes(data=audio, mime_type=mime_type),
+                f"<doses>\n{doses}\n</doses>",
+                "What did the speaker take, skip or say about how they feel?",
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=VOICE_PROMPT,
+                response_mime_type="application/json",
+                response_schema=VoiceNote,
+                temperature=0.1,
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+                max_output_tokens=2048,
+                automatic_function_calling=NO_TOOLS,
+            ),
+        )
+        parsed = response.parsed
+        if isinstance(parsed, VoiceNote):
+            return parsed
+        return VoiceNote.model_validate_json(response.text or "{}")

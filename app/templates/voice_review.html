@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Check your voice note{% endblock %}
+{% block content %}
+<h1>Is this right?</h1>
+
+<section class="card" aria-labelledby="heard-title">
+  <h2 id="heard-title">You said</h2>
+  {% if note.heard %}
+  <blockquote class="heard big" {% if note.language_code %}lang="{{ note.language_code }}"{% endif %}>“{{ note.heard }}”</blockquote>
+  {% if note.heard_english and note.language_code != 'en' %}<p class="hint">In English: {{ note.heard_english }}</p>{% endif %}
+  {% endif %}
+  {% if note.reply %}
+  <p id="voice-reply" {% if note.language_code %}lang="{{ note.language_code }}"{% endif %}>{{ note.reply }}</p>
+  <button type="button" class="btn btn-ghost" data-speak="#voice-reply"><span aria-hidden="true">🔊</span> Read aloud</button>
+  {% endif %}
+</section>
+
+{% if suggestions or feeling %}
+<form method="post" action="/voice/save" class="card stack" aria-labelledby="save-title">
+  <h2 id="save-title">Save these?</h2>
+  <p class="hint">Gemini only suggests. Untick anything that is wrong.</p>
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  {% if suggestions %}
+  <fieldset class="voice-list">
+    <legend>Medicines</legend>
+    {% for s in suggestions %}
+    <label class="check"><input type="checkbox" name="dose" value="{{ s.value }}" checked> {{ s.label }}: <strong>{{ 'taken' if s.status.value == 'taken' else 'skipped' }}</strong></label>
+    {% endfor %}
+  </fieldset>
+  {% endif %}
+  {% if feeling %}
+  <fieldset class="voice-list">
+    <legend>How you feel today</legend>
+    <label class="check"><input type="checkbox" name="feeling" value="{{ feeling.value }}" checked> {{ feeling.label }}</label>
+    <div class="field">
+      <label for="voice-note">Note</label>
+      <textarea id="voice-note" name="note" maxlength="280" rows="2">{{ note.note }}</textarea>
+    </div>
+    {% if feeling.value == 'unwell' %}
+    <label class="check"><input type="checkbox" name="tell" value="yes"> Email my caretakers and family that I am not well</label>
+    {% endif %}
+  </fieldset>
+  {% endif %}
+  <div class="actions">
+    <button type="submit" class="btn btn-primary btn-big">Yes, save</button>
+    <a class="btn btn-ghost" href="/today">Cancel</a>
+  </div>
+</form>
+{% else %}
+<section class="card">
+  <p class="big">Sorry, I could not pick out any medicines or feelings from that.</p>
+  <p>Try again and speak a little slower, for example: “I took my morning tablets and I feel fine.”</p>
+  <p><a class="btn btn-primary" href="/today#voice">Try again</a></p>
+</section>
+{% endif %}
+{% endblock %}
