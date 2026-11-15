@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.models import Circle
-from app.services.ai import AiUnavailable, WeeklySummary
+from app.services.ai import SUMMARY_LANGUAGES, AiUnavailable, WeeklySummary
 from app.services.care import CareService, summarise_adherence
 from app.services.emailer import EmailFailed
 from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
@@ -21,12 +22,15 @@ def _summaries(circle_id: str) -> str:
     return f"circles/{circle_id}/summaries"
 
 
-def latest_summary(care: CareService, circle_id: str) -> tuple[WeeklySummary | None, str | None]:
-    """The most recent saved weekly summary and when it was written, if any."""
+def latest_summary(
+    care: CareService, circle_id: str
+) -> tuple[WeeklySummary | None, dict[str, str]]:
+    """The most recent saved weekly summary, plus when and in which language it was written."""
     saved = care.store.get(_summaries(circle_id), "latest")
     if not saved:
-        return None, None
-    return WeeklySummary.model_validate(saved["summary"]), saved.get("created_at")
+        return None, {"created_at": "", "language": "en"}
+    meta = {"created_at": saved.get("created_at", ""), "language": saved.get("language", "en")}
+    return WeeklySummary.model_validate(saved["summary"]), meta
 
 
 def build_week_facts(care: CareService, circle: Circle, today: date, now: datetime) -> str:
@@ -82,7 +86,7 @@ def insights(request: Request, member: MemberDep, services: ServicesDep) -> HTML
     week_doses = [d for d in month_doses if d.scheduled_for.astimezone(zone).date() >= week_start]
     week, week_per_med = summarise_adherence(week_doses, now)
     month, _ = summarise_adherence(month_doses, now)
-    summary, summary_at = latest_summary(care, circle.id)
+    summary, meta = latest_summary(care, circle.id)
     return render(
         request,
         "insights.html",
@@ -93,14 +97,20 @@ def insights(request: Request, member: MemberDep, services: ServicesDep) -> HTML
         month=month,
         week_per_med=sorted(week_per_med.items()),
         summary=summary,
-        summary_at=summary_at,
+        summary_at=meta["created_at"],
+        summary_lang=meta["language"],
+        languages=SUMMARY_LANGUAGES,
         ai_enabled=services.ai.enabled,
     )
 
 
 @router.post("/summary")
 def generate_summary(
-    request: Request, member: MemberDep, services: ServicesDep, _csrf: CsrfDep
+    request: Request,
+    member: MemberDep,
+    services: ServicesDep,
+    _csrf: CsrfDep,
+    language: Annotated[str, Form(max_length=5)] = "en",
 ) -> RedirectResponse:
     if not services.ai_limiter.hit(f"ai:{member.circle_id}:{member.id}"):
         flash(request, "You have used the AI summary a lot just now. Try again later.", "error")
@@ -110,7 +120,7 @@ def generate_summary(
     now = datetime.now(UTC)
     today = now.astimezone(ZoneInfo(circle.timezone)).date()
     try:
-        result = services.ai.summarise_week(build_week_facts(care, circle, today, now))
+        result = services.ai.summarise_week(build_week_facts(care, circle, today, now), language)
     except AiUnavailable as exc:
         flash(request, str(exc), "error")
         return redirect("/insights")
@@ -120,7 +130,11 @@ def generate_summary(
     care.store.put(
         _summaries(circle.id),
         "latest",
-        {"summary": result.model_dump(), "created_at": now.isoformat()},
+        {
+            "summary": result.model_dump(),
+            "created_at": now.isoformat(),
+            "language": language if language in SUMMARY_LANGUAGES else "en",
+        },
     )
     flash(request, "Weekly summary ready.", "success")
     return redirect("/insights#summary")

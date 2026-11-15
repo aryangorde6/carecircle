@@ -43,10 +43,14 @@ class GeminiModel:
             return []
         return [ExtractedMedication.model_validate(item) for item in parsed]
 
-    def weekly_summary(self, facts: str) -> WeeklySummary:
+    def weekly_summary(self, facts: str, language: str = "English") -> WeeklySummary:
         response = self._client.models.generate_content(
             model=self._model,
-            contents=[f"<data>\n{facts}\n</data>"],
+            contents=[
+                f"<data>\n{facts}\n</data>",
+                # From a fixed allow-list, never free text from a user.
+                f"Write the summary and the questions in {language}.",
+            ],
             config=types.GenerateContentConfig(
                 system_instruction=SUMMARY_PROMPT,
                 response_mime_type="application/json",

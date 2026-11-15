@@ -23,7 +23,7 @@ Most reminder apps nag one person. CareCircle treats medication as a team effort
 | Track adherence | One-tap **"I took it" / "Skip"** per dose, who marked it, 7- and 30-day adherence overall and per medicine |
 | Monitor upcoming doctor appointments | Appointment list with reason, place and notes, **Add to Google Calendar**, **Google Maps directions** and a printable **visit sheet** |
 | Email reminders for upcoming doses, missed doses and appointments | Cloud Scheduler runs the reminder job every 5 minutes; see the escalation ladder below. Plus a **refill email** when a medicine is running low |
-| Beyond a basic reminder app | Gemini **prescription reader**, **escalating** reminders, **refill alerts**, a **daily wellbeing check-in**, a Gemini **weekly family update** and a **doctor-visit sheet** |
+| Beyond a basic reminder app | Gemini **prescription reader**, **escalating** reminders, **refill alerts**, a **daily wellbeing check-in**, a Gemini **weekly family update in 8 languages** and a **doctor-visit sheet** |
 | Elder at the centre of their own decisions | Only the elder can add or remove people and switch them between view-only and edit. The elder's own **"How are you feeling today?"** goes into the weekly update and the visit sheet, and the circle is emailed about a bad day **only if the elder chooses** |
 
 ## Features
@@ -56,7 +56,7 @@ The elder adds caretakers and family, chooses *view only* or *view and edit* for
 A one-tap daily check-in on the Today screen: **Good**, **Okay** or **Not well**, with an optional note in the elder's own words ("felt dizzy after the morning tablet"). The family sees it on Today and Insights. If the elder picks *Not well* and ticks the box, caretakers and family get an email right away; without that tick, nobody is emailed. The elder decides.
 
 ### 7. Weekly family update (Gemini)
-From the week's adherence data and check-ins, Gemini writes a short, warm, plain-language summary and 3–5 questions to ask at the next doctor's visit. It turns a feeling like dizziness into a question for the doctor rather than a conclusion. An editor can email it to the whole circle. It never gives medical advice or suggests dose changes.
+From the week's adherence data and check-ins, Gemini writes a short, warm, plain-language summary and 3–5 questions to ask at the next doctor's visit. It turns a feeling like dizziness into a question for the doctor rather than a conclusion. It can be written in **English, Hindi, Marathi, Bengali, Tamil, Telugu, Kannada or Gujarati**, so the elder can read it too (the text is marked with the right `lang` so screen readers switch voice). An editor can email it to the whole circle. It never gives medical advice or suggests dose changes.
 
 ### 8. Medicine supply and refill alerts
 Enter how many doses are in hand. Each dose marked *taken* counts down (a correction gives it back), the Medicines and Today screens show about how many days are left, and when five days or fewer remain the elder and caretakers get **one** refill email. Pressing **Refilled** adds the new stock and re-arms the alert.
@@ -125,7 +125,7 @@ Gemini and Firestore authenticate with the Cloud Run service account, so **there
 - **Consent for sharing:** a "Not well" check-in emails the circle only when the elder ticks the box, is never sent to the person who shared it, and is rate-limited per circle.
 - **Object-level authorization:** every lookup is scoped to the signed-in member's circle path, so an id from another circle can never resolve (covered by tests). Edit rights and elder-only actions are enforced server-side, not just hidden in the UI.
 - **Uploads** are accepted only as JPEG, PNG or WebP by **magic bytes**, capped at 5 MB, processed in memory and never stored or executed.
-- **AI safety:** prompts treat user content strictly as data, outputs are schema-validated, shown for human review and HTML-escaped; the model cannot trigger actions.
+- **AI safety:** prompts treat user content strictly as data, outputs are schema-validated, shown for human review and HTML-escaped; the model cannot trigger actions. The summary language comes from a fixed allow-list, never free text.
 - **AI spending stop:** a hard daily cap on Gemini calls (Firestore counter) plus a per-member hourly limit.
 - **Scheduler endpoint** accepts only Google-signed OIDC tokens for the configured audience and service account.
 - **Headers:** strict Content-Security-Policy (no inline scripts or styles), HSTS, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. API docs are disabled in production.
@@ -144,12 +144,12 @@ Server-rendered pages with one small CSS file and one small script, gzip compres
 
 ```bash
 uv sync
-uv run pytest          # 68 tests, ~90% coverage
+uv run pytest          # 70 tests, ~90% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```
 
-The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths, every step of the reminder ladder with fixed clocks, supply counting and refill alerts, check-in consent (no email without the elder's tick), the visit sheet and structured logging. GitHub Actions runs lint, tests and the dependency audit on every push.
+The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths, every step of the reminder ladder with fixed clocks, supply counting and refill alerts, check-in consent (no email without the elder's tick), the summary language allow-list, the visit sheet and structured logging. GitHub Actions runs lint, tests and the dependency audit on every push.
 
 ## Run locally
 

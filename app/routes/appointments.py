@@ -78,7 +78,7 @@ def visit_sheet(
         care.schedule_for_days(circle, today - timedelta(days=29), today), now
     )
     check_ins = care.list_check_ins(circle.id, today - timedelta(days=13), today)
-    summary, _ = latest_summary(care, circle.id)
+    summary, meta = latest_summary(care, circle.id)
     return render(
         request,
         "visit_sheet.html",
@@ -94,6 +94,7 @@ def visit_sheet(
         unwell=[c for c in check_ins if c.feeling.value != "good"],
         good_days=sum(1 for c in check_ins if c.feeling.value == "good"),
         summary=summary,
+        summary_lang=meta["language"],
     )
 
 

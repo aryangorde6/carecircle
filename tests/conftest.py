@@ -34,14 +34,16 @@ class FakeAi:
     medications: list[ExtractedMedication] = field(default_factory=list)
     calls: int = 0
     last_facts: str = ""
+    last_language: str = ""
 
     def extract_medications(self, image: bytes, mime_type: str) -> list[ExtractedMedication]:
         self.calls += 1
         return self.medications
 
-    def weekly_summary(self, facts: str) -> WeeklySummary:
+    def weekly_summary(self, facts: str, language: str = "English") -> WeeklySummary:
         self.calls += 1
         self.last_facts = facts
+        self.last_language = language
         return WeeklySummary(summary="A good week overall.", doctor_questions=["Any changes?"])
 
 

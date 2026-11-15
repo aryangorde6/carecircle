@@ -63,7 +63,7 @@
     <h2 id="sheet-q">Questions to ask</h2>
     {% if appt.notes %}<p><strong>Notes:</strong> {{ appt.notes }}</p>{% endif %}
     {% if summary and summary.doctor_questions %}
-    <ol>{% for q in summary.doctor_questions %}<li>{{ q }}</li>{% endfor %}</ol>
+    <ol lang="{{ summary_lang }}">{% for q in summary.doctor_questions %}<li>{{ q }}</li>{% endfor %}</ol>
     <p class="hint">Suggested by Gemini from the weekly records. Not medical advice.</p>
     {% else %}
     <p class="hint no-print">Write the weekly update on the <a href="/insights#summary">Insights</a> page to add suggested questions here.</p>

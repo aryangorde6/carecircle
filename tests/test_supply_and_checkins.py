@@ -311,3 +311,22 @@ def test_demo_has_low_supply_and_a_week_of_check_ins(client):
     assert "Running low" in today and "Amlodipine" in today
     insights = client.get("/insights").text
     assert "Felt dizzy in the morning after the blood pressure tablet" in insights
+
+
+# ----- weekly update language ---------------------------------------------------
+
+
+def test_weekly_update_in_the_elders_language(client, fake_ai):
+    create_circle(client)
+    post(client, "/insights/summary", {"language": "hi"})
+    assert fake_ai.last_language == "Hindi (हिन्दी)"
+    page = client.get("/insights").text
+    assert '<div lang="hi">' in page  # screen readers switch voice
+    assert '<option value="hi" selected>' in page
+
+
+def test_unknown_language_falls_back_to_english(client, fake_ai):
+    create_circle(client)
+    post(client, "/insights/summary", {"language": "xx"})
+    assert fake_ai.last_language == "English"
+    assert '<div lang="en">' in client.get("/insights").text
