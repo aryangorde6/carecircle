@@ -126,7 +126,7 @@ Server-rendered pages with one small CSS file and one small script, gzip compres
 
 ```bash
 uv sync
-uv run pytest          # 44 tests, ~88% coverage
+uv run pytest          # 46 tests, ~89% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```

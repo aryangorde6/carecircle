@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app.models import Circle
 from app.services.ai import AiUnavailable, WeeklySummary
 from app.services.care import CareService
+from app.services.emailer import EmailFailed
 from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
 
 router = APIRouter(prefix="/insights")
@@ -134,6 +135,12 @@ def email_summary(
         f"Questions for the next doctor's visit:\n{questions}\n\n"
         f"See details: {services.settings.public_base_url}/insights"
     )
-    services.reminders.emailer.send(to, f"This week's care update for {circle.elder_name}", body)
+    try:
+        services.reminders.emailer.send(
+            to, f"This week's care update for {circle.elder_name}", body
+        )
+    except EmailFailed:
+        flash(request, "The email could not be sent just now. Please try again later.", "error")
+        return redirect("/insights")
     flash(request, f"Summary emailed to {len(to)} people in the circle.", "success")
     return redirect("/insights")

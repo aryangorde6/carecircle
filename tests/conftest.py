@@ -12,6 +12,7 @@ from app.config import Settings
 from app.main import create_app
 from app.models import ExtractedMedication
 from app.services.ai import WeeklySummary
+from app.services.emailer import EmailFailed
 from app.store import InMemoryStore
 
 CSRF_RE = re.compile(r'name="csrf" value="([^"]+)"')
@@ -20,8 +21,11 @@ CSRF_RE = re.compile(r'name="csrf" value="([^"]+)"')
 @dataclass
 class FakeEmailer:
     sent: list[tuple[list[str], str, str]] = field(default_factory=list)
+    fail: bool = False
 
     def send(self, to: list[str], subject: str, body: str) -> None:
+        if self.fail:
+            raise EmailFailed
         self.sent.append((to, subject, body))
 
 

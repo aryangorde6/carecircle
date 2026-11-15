@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import smtplib
 from datetime import UTC, date, datetime
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.services.care import CareService
 from app.services.demo import create_demo_circle
+from app.services.emailer import EmailFailed, SmtpEmailer
 from app.store import InMemoryStore
 from tests.conftest import csrf_from, post
 
@@ -61,3 +65,22 @@ def test_bad_email_rejected(client):
     client.post("/demo", data={"csrf": csrf_from(client)})
     response = post(client, "/circle/me", {"email": "not-an-email"})
     assert "check the email address" in response.text
+
+
+def test_failed_email_shows_a_friendly_message(client, emailer):
+    client.post("/demo", data={"csrf": csrf_from(client)})
+    post(client, "/circle/me", {"email": "judge@example.com", "notify": "on"})
+    emailer.fail = True
+    response = post(client, "/circle/test-email")
+    assert response.status_code == 200
+    assert "could not be sent" in response.text
+
+
+def test_smtp_errors_become_email_failed(monkeypatch):
+    def refuse(*args, **kwargs):
+        raise smtplib.SMTPAuthenticationError(535, b"bad credentials")
+
+    monkeypatch.setattr(smtplib, "SMTP", refuse)
+    settings = Settings(smtp_user="u@example.com", smtp_password="x", email_from="u@example.com")
+    with pytest.raises(EmailFailed):
+        SmtpEmailer(settings).send(["a@example.com"], "Subject", "Body")

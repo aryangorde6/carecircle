@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from app.models import Access, Role
 from app.security import validate_passcode
 from app.services.care import NotFound, PasscodeInUse, PermissionDenied
+from app.services.emailer import EmailFailed
 from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
 
 router = APIRouter(prefix="/circle")
@@ -64,13 +65,17 @@ def send_test_email(
         flash(request, "A test email was sent recently. Please wait a little.", "error")
         return redirect("/circle#me")
     circle = services.care.get_circle(member.circle_id)
-    services.reminders.emailer.send(
-        [str(member.email)],
-        f"CareCircle test reminder for {circle.elder_name}'s circle",
-        f"Hello {member.name},\n\nThis is a test from CareCircle. Reminder emails for "
-        f"{circle.elder_name}'s medicines and appointments will arrive like this one.\n\n"
-        f"Open CareCircle: {services.settings.public_base_url}/today",
-    )
+    try:
+        services.reminders.emailer.send(
+            [str(member.email)],
+            f"CareCircle test reminder for {circle.elder_name}'s circle",
+            f"Hello {member.name},\n\nThis is a test from CareCircle. Reminder emails for "
+            f"{circle.elder_name}'s medicines and appointments will arrive like this one.\n\n"
+            f"Open CareCircle: {services.settings.public_base_url}/today",
+        )
+    except EmailFailed:
+        flash(request, "The email could not be sent just now. Please try again later.", "error")
+        return redirect("/circle#me")
     flash(request, f"Test email sent to {member.email}. Check your inbox (and spam).", "success")
     return redirect("/circle#me")
 
