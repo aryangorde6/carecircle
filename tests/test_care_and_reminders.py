@@ -11,7 +11,7 @@ from app.models import Access, DoseStatus, Role
 from app.services.care import CareService, PermissionDenied
 from app.services.reminders import ReminderService, dose_stage
 from app.store import InMemoryStore
-from tests.conftest import FakeEmailer
+from tests.conftest import FakeEmailer, create_circle, post
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -209,3 +209,32 @@ def test_today_page_marks_dose(client, store):
         },
     )
     assert "could not be found" in forged.text
+
+
+@pytest.mark.parametrize(
+    ("utc_hour", "expected"),
+    [(1, "Next: Aspirin 75 mg at 08:00 AM"), (5, "Not taken yet: Aspirin 75 mg, due at 08:00 AM")],
+)
+def test_today_summary_says_when_the_next_dose_is_overdue(client, monkeypatch, utc_hour, expected):
+    import app.routes.today as today_route
+
+    fixed = datetime(2026, 11, 15, utc_hour, 0, tzinfo=UTC)  # 06:30 or 10:30 in India
+
+    class FixedClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed if tz is None else fixed.astimezone(tz)
+
+    create_circle(client)
+    post(
+        client,
+        "/medications",
+        {
+            "name": "Aspirin",
+            "dosage": "75 mg",
+            "times": ["08:00", "20:00"],
+            "start_date": "2026-11-01",
+        },
+    )
+    monkeypatch.setattr(today_route, "datetime", FixedClock)
+    assert expected in client.get("/today").text

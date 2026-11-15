@@ -120,7 +120,7 @@ button[disabled] { opacity: 0.7; cursor: progress; }
 
 /* Demo */
 .demo-banner { background: var(--warn-soft); border-bottom: 1px solid #e8c48f; }
-.demo-banner p { margin: 0; padding: 0.5rem 0; font-size: 0.95em; }
+.demo-banner p { margin-block: 0; padding: 0.5rem 0; font-size: 0.95em; }
 .demo-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin: 1.25rem 0 0.5rem; }
 code { font-family: ui-monospace, monospace; background: var(--brand-soft); padding: 0.1rem 0.4rem; border-radius: 6px; }
 
@@ -176,7 +176,8 @@ thead th { background: var(--brand-soft); }
 .stat-number { font-size: 3em; font-weight: 800; color: var(--brand-dark); margin: 0; }
 .stat-unit { font-size: 0.5em; }
 .bar-list { list-style: none; padding: 0; display: grid; gap: 0.6rem; }
-.bar-list li { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr auto; gap: 1rem; align-items: center; }
+.bar-list li { display: grid; grid-template-columns: minmax(8rem, 14rem) 1fr 7.5rem; gap: 1rem; align-items: center; }
+.bar-list li > :last-child { text-align: right; font-variant-numeric: tabular-nums; }
 meter { width: 100%; height: 1.4rem; }
 .summary-text { font-size: 1.1em; white-space: pre-line; }
 .stopped { margin-top: 2rem; }
@@ -197,6 +198,7 @@ meter { width: 100%; height: 1.4rem; }
   .dose { grid-template-columns: 1fr; }
   .dose-actions form { justify-content: flex-start; }
   .bar-list li { grid-template-columns: 1fr; gap: 0.2rem; }
+  .bar-list li > :last-child { text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {
