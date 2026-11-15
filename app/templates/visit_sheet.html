@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Visit sheet{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <p><a href="/appointments"><span aria-hidden="true">←</span> Back to appointments</a></p>
+  <button type="button" class="btn btn-primary" data-print hidden>Print or save as PDF</button>
+</div>
+
+<article class="sheet" aria-labelledby="sheet-title">
+  <h1 id="sheet-title">Visit sheet for {{ circle.elder_name }}</h1>
+  <p class="big">{{ appt.doctor }}, {{ when.strftime('%A %d %B %Y, %I:%M %p') }}</p>
+  {% if appt.purpose %}<p><strong>Reason:</strong> {{ appt.purpose }}</p>{% endif %}
+  {% if appt.location %}<p><strong>Where:</strong> {{ appt.location }}</p>{% endif %}
+  <p class="hint">Prepared on {{ today.strftime('%d %B %Y') }} from CareCircle records. Please ask the doctor before changing any medicine.</p>
+
+  <section aria-labelledby="sheet-meds">
+    <h2 id="sheet-meds">Current medicines</h2>
+    {% if meds %}
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">Current medicines, when they are taken, and how often each was taken in the last 30 days</caption>
+        <thead>
+          <tr><th scope="col">Medicine</th><th scope="col">Dose</th><th scope="col">When</th><th scope="col">Taken, last 30 days</th></tr>
+        </thead>
+        <tbody>
+          {% for m in meds %}
+          {% set s = per_med.get(m.name) %}
+          <tr>
+            <th scope="row">{{ m.name }}</th>
+            <td>{{ m.dosage or '–' }}{% if m.instructions %}<br><span class="hint">{{ m.instructions }}</span>{% endif %}</td>
+            <td>{{ m.times|join(', ') }}</td>
+            <td>{% if s and s.percent is not none %}{{ s.percent }}% <span class="hint">({{ s.taken }} of {{ s.expected }})</span>{% else %}–{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if overall.percent is not none %}
+    <p>Overall: <strong>{{ overall.percent }}%</strong> of {{ overall.expected }} doses taken; {{ overall.missed }} missed and {{ overall.skipped }} skipped.</p>
+    {% endif %}
+    {% else %}
+    <p>No medicines recorded.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="sheet-feel">
+    <h2 id="sheet-feel">How {{ circle.elder_name }} has felt, last 14 days</h2>
+    {% if check_ins %}
+    <p>{{ good_days }} good day{{ '' if good_days == 1 else 's' }} out of {{ check_ins|length }} check-in{{ '' if check_ins|length == 1 else 's' }}.</p>
+    {% if unwell %}
+    <ul class="feeling-list">
+      {% for c in unwell %}
+      <li><span class="hint">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% else %}
+    <p>No check-ins recorded.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="sheet-q">
+    <h2 id="sheet-q">Questions to ask</h2>
+    {% if appt.notes %}<p><strong>Notes:</strong> {{ appt.notes }}</p>{% endif %}
+    {% if summary and summary.doctor_questions %}
+    <ol>{% for q in summary.doctor_questions %}<li>{{ q }}</li>{% endfor %}</ol>
+    <p class="hint">Suggested by Gemini from the weekly records. Not medical advice.</p>
+    {% else %}
+    <p class="hint no-print">Write the weekly update on the <a href="/insights#summary">Insights</a> page to add suggested questions here.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="sheet-notes">
+    <h2 id="sheet-notes">Doctor's advice</h2>
+    <p class="hint">Space to write by hand on the printed page.</p>
+    <div class="write-lines" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  </section>
+</article>
+{% endblock %}

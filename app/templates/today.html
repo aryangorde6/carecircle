@@ -24,6 +24,44 @@
   {% endif %}
 </section>
 
+{% set feeling_icons = {'good': '🙂', 'okay': '😐', 'unwell': '🙁'} %}
+<section class="card checkin-card" id="checkin" aria-labelledby="checkin-title">
+  <h2 id="checkin-title">{% if member.is_elder %}How are you feeling today?{% else %}How is {{ circle.elder_name }} feeling today?{% endif %}</h2>
+  {% if check_in %}
+    <p class="big feeling feeling-{{ check_in.feeling.value }}"><span aria-hidden="true">{{ feeling_icons[check_in.feeling.value] }}</span> {{ check_in.feeling.label }}{% if check_in.note %}: “{{ check_in.note }}”{% endif %}</p>
+    <p class="hint">Shared by {{ check_in.recorded_by }} at {{ check_in.recorded_at.astimezone(zone).strftime('%I:%M %p') }}.</p>
+  {% elif not member.can_edit %}
+    <p>Not shared yet today.</p>
+  {% endif %}
+  {% if member.can_edit %}
+  {% if check_in %}<details class="checkin-change"><summary>Change today's answer</summary>{% endif %}
+    <form method="post" action="/checkin" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="note">Anything to tell your family or doctor? <span class="optional">(optional)</span></label>
+        <textarea id="note" name="note" maxlength="280" rows="2" placeholder="e.g. felt dizzy after the morning tablet">{{ check_in.note if check_in else '' }}</textarea>
+      </div>
+      <label class="check"><input type="checkbox" name="tell" value="yes"> If I choose “Not well”, email my caretakers and family</label>
+      <div class="feelings" role="group" aria-labelledby="checkin-title">
+        <button type="submit" name="feeling" value="good" class="btn btn-feeling"><span aria-hidden="true">🙂</span> Good</button>
+        <button type="submit" name="feeling" value="okay" class="btn btn-feeling"><span aria-hidden="true">😐</span> Okay</button>
+        <button type="submit" name="feeling" value="unwell" class="btn btn-feeling btn-unwell"><span aria-hidden="true">🙁</span> Not well</button>
+      </div>
+    </form>
+  {% if check_in %}</details>{% endif %}
+  {% endif %}
+</section>
+
+{% if low_meds %}
+<section class="card notice-card" aria-labelledby="low-title">
+  <h2 id="low-title"><span aria-hidden="true">!</span> Running low</h2>
+  <ul class="plain-list">
+    {% for m in low_meds %}<li><strong>{{ m.name }}</strong>: about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }} left</li>{% endfor %}
+  </ul>
+  <p class="hint">Buy more soon, then press Refilled on the <a href="/medications">Medicines</a> page.</p>
+</section>
+{% endif %}
+
 <section aria-labelledby="doses-title">
   <h2 id="doses-title">Medicines</h2>
   {% if doses %}

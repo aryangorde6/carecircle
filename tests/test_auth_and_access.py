@@ -187,3 +187,29 @@ def test_head_requests_supported_for_uptime_checks(client):
     assert client.head("/").status_code == 200
     assert client.head("/healthz").status_code == 200
     assert client.get("/health").json() == {"status": "ok"}
+
+
+def test_cloud_run_logs_are_structured_json(monkeypatch):
+    import json
+    import logging
+
+    from app.logging_config import CloudLoggingFormatter, configure_logging
+
+    try:
+        raise ValueError("boom")
+    except ValueError:
+        import sys
+
+        record = logging.LogRecord(
+            "app", logging.ERROR, __file__, 1, "run %s", ("x",), sys.exc_info()
+        )
+    entry = json.loads(CloudLoggingFormatter().format(record))
+    assert entry["severity"] == "ERROR" and entry["message"] == "run x"
+    assert "ValueError: boom" in entry["stack_trace"]
+
+    monkeypatch.setenv("K_SERVICE", "carecircle")
+    configure_logging()
+    assert isinstance(logging.getLogger().handlers[0].formatter, CloudLoggingFormatter)
+    monkeypatch.delenv("K_SERVICE")
+    configure_logging()
+    assert not isinstance(logging.getLogger().handlers[0].formatter, CloudLoggingFormatter)

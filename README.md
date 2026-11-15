@@ -19,12 +19,12 @@ Most reminder apps nag one person. CareCircle treats medication as a team effort
 |---|---|
 | Shared ecosystem for elders, caretakers and family | One **care circle** per elder, with three roles: elder, caretaker, family |
 | Secure, passcode-based access | Every person has **their own passcode** (Argon2id-hashed) plus the circle code; sign-in is rate-limited |
-| View, add, edit and manage medication schedules | Medicines with dose, instructions, several daily times, start and end dates; stop without losing history |
+| View, add, edit and manage medication schedules | Medicines with dose, instructions, several daily times, start and end dates; stop without losing history; **supply count** that ticks down as doses are taken |
 | Track adherence | One-tap **"I took it" / "Skip"** per dose, who marked it, 7- and 30-day adherence overall and per medicine |
-| Monitor upcoming doctor appointments | Appointment list with reason, place and notes, plus **Add to Google Calendar** |
-| Email reminders for upcoming doses, missed doses and appointments | Cloud Scheduler runs the reminder job every 5 minutes; see the escalation ladder below |
-| Beyond a basic reminder app | Gemini **prescription reader**, **escalating** reminders, **elder-controlled access**, Gemini **weekly family update** |
-| Elder at the centre of their own decisions | Only the elder can add or remove people and switch them between view-only and edit |
+| Monitor upcoming doctor appointments | Appointment list with reason, place and notes, **Add to Google Calendar**, **Google Maps directions** and a printable **visit sheet** |
+| Email reminders for upcoming doses, missed doses and appointments | Cloud Scheduler runs the reminder job every 5 minutes; see the escalation ladder below. Plus a **refill email** when a medicine is running low |
+| Beyond a basic reminder app | Gemini **prescription reader**, **escalating** reminders, **refill alerts**, a **daily wellbeing check-in**, a Gemini **weekly family update** and a **doctor-visit sheet** |
+| Elder at the centre of their own decisions | Only the elder can add or remove people and switch them between view-only and edit. The elder's own **"How are you feeling today?"** goes into the weekly update and the visit sheet, and the circle is emailed about a bad day **only if the elder chooses** |
 
 ## Features
 
@@ -50,10 +50,19 @@ Photograph a prescription or medicine label. Gemini reads it with a **structured
 The elder adds caretakers and family, chooses *view only* or *view and edit* for each, and can change or revoke it at any time. Permissions are re-read from the database on every request, so a removed person loses access immediately, even mid-session.
 
 ### 5. One-click demo
-**Try a demo circle** creates a fresh, private circle with an elder, a caretaker and a family member, three medicines, a week of realistic history (including a pattern of missed evening doses) and two upcoming appointments. The circle page lists demo passcodes so you can sign in as each role and see how access changes. Add your own email under *Your reminders* and press **Send me a test email** to see delivery working.
+**Try a demo circle** creates a fresh, private circle with an elder, a caretaker and a family member, three medicines (one running low), a week of realistic history (including a pattern of missed evening doses and a dizzy morning in the check-ins) and two upcoming appointments. The circle page lists demo passcodes so you can sign in as each role and see how access changes. Add your own email under *Your reminders* and press **Send me a test email** to see delivery working.
 
-### 6. Weekly family update (Gemini)
-From the week's adherence data, Gemini writes a short, warm, plain-language summary and 3–5 questions to ask at the next doctor's visit. An editor can email it to the whole circle. It never gives medical advice or suggests dose changes.
+### 6. "How are you feeling today?"
+A one-tap daily check-in on the Today screen: **Good**, **Okay** or **Not well**, with an optional note in the elder's own words ("felt dizzy after the morning tablet"). The family sees it on Today and Insights. If the elder picks *Not well* and ticks the box, caretakers and family get an email right away; without that tick, nobody is emailed. The elder decides.
+
+### 7. Weekly family update (Gemini)
+From the week's adherence data and check-ins, Gemini writes a short, warm, plain-language summary and 3–5 questions to ask at the next doctor's visit. It turns a feeling like dizziness into a question for the doctor rather than a conclusion. An editor can email it to the whole circle. It never gives medical advice or suggests dose changes.
+
+### 8. Medicine supply and refill alerts
+Enter how many doses are in hand. Each dose marked *taken* counts down (a correction gives it back), the Medicines and Today screens show about how many days are left, and when five days or fewer remain the elder and caretakers get **one** refill email. Pressing **Refilled** adds the new stock and re-arms the alert.
+
+### 9. Doctor-visit sheet
+Every appointment has a printable one-page **visit sheet**: current medicines with 30-day adherence for each, how the elder has felt over two weeks (bad days with their notes), the appointment notes, Gemini's suggested questions, and space to write the doctor's advice. **Print or save as PDF** and take it to the clinic.
 
 ## Architecture
 
@@ -61,10 +70,11 @@ From the week's adherence data, Gemini writes a short, warm, plain-language summ
 Browser (server-rendered HTML, no framework, works without JavaScript)
    │  HTTPS, signed session cookie
    ▼
-Cloud Run ── FastAPI app ─────────────┬── Cloud Firestore (circles, members, medicines, doses, appointments)
+Cloud Run ── FastAPI app ─────────────┬── Cloud Firestore (circles, members, medicines, doses, check-ins, appointments)
    ▲                                  ├── Vertex AI Gemini (prescription reading, weekly summary)
    │ OIDC-authenticated POST          ├── Secret Manager (session key, SMTP password)
-Cloud Scheduler (every 5 min)         └── SMTP (Gmail) for reminder emails
+Cloud Scheduler (every 5 min)         ├── SMTP (Gmail) for reminder emails
+                                      └── Cloud Logging (structured JSON logs)
 ```
 
 ```
@@ -73,16 +83,17 @@ app/
   config.py            settings from environment variables
   models.py            Pydantic domain models
   security.py          Argon2 hashing, CSRF, rate limiter, headers
+  logging_config.py    structured JSON logs for Cloud Logging
   store.py             document-store interface + in-memory store (tests, local)
   store_firestore.py   Firestore implementation
   uploads.py           image validation by magic bytes
   services/
-    care.py            circles, members, medicines, doses, adherence, appointments
-    reminders.py       escalation ladder and appointment reminders
+    care.py            circles, members, medicines, supply, doses, adherence, check-ins, appointments
+    reminders.py       escalation ladder, refill alerts and appointment reminders
     ai.py              prompts, daily AI budget, AI service
     gemini_client.py   Gemini on Vertex AI (Google Gen AI SDK)
     emailer.py         SMTP and console email backends
-  routes/              auth, today, medications, appointments, circle, insights, tasks
+  routes/              auth, today (doses, check-ins), medications, appointments (visit sheet), circle, insights, tasks
   templates/, static/  accessible HTML, CSS and a little progressive-enhancement JS
 tests/                 pytest suite with fakes for Firestore, Gemini and email
 ```
@@ -99,7 +110,9 @@ The domain layer depends only on a small `DocumentStore` interface, so the same 
 | **Cloud Scheduler** | Calls the reminder job every 5 minutes with a Google-signed OIDC token |
 | **Secret Manager** | Session signing key and SMTP password, injected at runtime |
 | **Cloud Build / Artifact Registry** | Building and storing the container image |
+| **Cloud Logging** | Structured JSON logs with severity; errors carry a stack trace for Error Reporting |
 | **Google Calendar** | One-click "Add to Google Calendar" links for appointments |
+| **Google Maps** | One-click directions to the clinic |
 
 Gemini and Firestore authenticate with the Cloud Run service account, so **there are no API keys in the code or the container**.
 
@@ -109,6 +122,7 @@ Gemini and Firestore authenticate with the Cloud Run service account, so **there
 - **Sign-in rate limiting** per client address and per circle; sessions are rotated on sign-in to prevent fixation.
 - **Signed, HttpOnly, Secure, SameSite=Lax session cookie**, expiring after 12 hours. No tokens in `localStorage`.
 - **CSRF tokens** on every state-changing form, compared in constant time.
+- **Consent for sharing:** a "Not well" check-in emails the circle only when the elder ticks the box, is never sent to the person who shared it, and is rate-limited per circle.
 - **Object-level authorization:** every lookup is scoped to the signed-in member's circle path, so an id from another circle can never resolve (covered by tests). Edit rights and elder-only actions are enforced server-side, not just hidden in the UI.
 - **Uploads** are accepted only as JPEG, PNG or WebP by **magic bytes**, capped at 5 MB, processed in memory and never stored or executed.
 - **AI safety:** prompts treat user content strictly as data, outputs are schema-validated, shown for human review and HTML-escaped; the model cannot trigger actions.
@@ -124,18 +138,18 @@ Built to WCAG 2.1 AA: semantic landmarks, a skip link, one `h1` per page, a labe
 
 ## Efficiency
 
-Server-rendered pages with one small CSS file and one small script, gzip compression and cached static files. Each page reads a circle's medicines and dose history once, however many days it covers (30-day adherence is one Firestore query, not thirty; tests pin the read counts), and a new demo circle writes its week of history in a single batch. Reminder runs read each circle once and batch all due doses of the same stage into a single email per recipient group. Gemini is called only on explicit user action, with low token limits.
+Server-rendered pages with one small CSS file and one small script, gzip compression and cached static files. Each page reads a circle's medicines and dose history once, however many days it covers (30-day adherence is one Firestore query, not thirty; tests pin the read counts), and a new demo circle writes its week of history and check-ins in batches. Reminder runs read each circle once, batch all due doses of the same stage into a single email per recipient group, and check refill levels from the medicines already loaded, with no extra read. Gemini is called only on explicit user action, with low token limits.
 
 ## Testing
 
 ```bash
 uv sync
-uv run pytest          # 51 tests, ~89% coverage
+uv run pytest          # 68 tests, ~90% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```
 
-The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths and every step of the reminder ladder with fixed clocks. GitHub Actions runs lint, tests and the dependency audit on every push.
+The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths, every step of the reminder ladder with fixed clocks, supply counting and refill alerts, check-in consent (no email without the elder's tick), the visit sheet and structured logging. GitHub Actions runs lint, tests and the dependency audit on every push.
 
 ## Run locally
 

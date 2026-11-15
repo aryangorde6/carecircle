@@ -12,17 +12,27 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from app.models import Access, Circle, DoseLog, DoseStatus, Member, Role
+from app.models import Access, CheckIn, Circle, DoseLog, DoseStatus, Feeling, Member, Role
 from app.services.care import CareService, dose_log_id
 
 DEMO_TIMEZONE = "Asia/Kolkata"
 
-# (name, dosage, instructions, times)
+# (name, dosage, instructions, times, doses in hand). Amlodipine is running low.
 DEMO_MEDICINES = (
-    ("Metformin", "500 mg, 1 tablet", "after food", ["08:30", "20:30"]),
-    ("Amlodipine", "5 mg, 1 tablet", "for blood pressure", ["09:00"]),
-    ("Atorvastatin", "10 mg, 1 tablet", "at bedtime", ["21:30"]),
+    ("Metformin", "500 mg, 1 tablet", "after food", ["08:30", "20:30"], 38),
+    ("Amlodipine", "5 mg, 1 tablet", "for blood pressure", ["09:00"], 4),
+    ("Atorvastatin", "10 mg, 1 tablet", "at bedtime", ["21:30"], 24),
 )
+
+# How Kamala said she felt (days ago -> feeling, note). Today is left for the visitor.
+DEMO_FEELINGS = {
+    6: (Feeling.GOOD, ""),
+    5: (Feeling.GOOD, "Went for a walk with Priya"),
+    4: (Feeling.OKAY, "A little tired"),
+    3: (Feeling.UNWELL, "Felt dizzy in the morning after the blood pressure tablet"),
+    2: (Feeling.GOOD, ""),
+    1: (Feeling.OKAY, "Slept badly"),
+}
 
 # Doses missed or skipped in the past week: (days ago, medicine, time, status or None=missed).
 # Evening statin doses are the weak spot, which the weekly summary can pick up.
@@ -71,8 +81,9 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
             times=times,
             start_date=start,
             end_date=None,
+            supply=supply,
         )
-        for name, dosage, instructions, times in DEMO_MEDICINES
+        for name, dosage, instructions, times, supply in DEMO_MEDICINES
     ]
 
     # Leave today's most recent due dose unmarked so the reminder ladder is visible.
@@ -112,6 +123,24 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
                     )
                 )
     care.save_dose_logs(history)  # one batch write instead of ~30 separate ones
+
+    care.save_check_ins(
+        circle.id,
+        [
+            CheckIn(
+                id=(today - timedelta(days=days_ago)).isoformat(),
+                circle_id=circle.id,
+                day=today - timedelta(days=days_ago),
+                feeling=feeling,
+                note=note,
+                recorded_by=elder.name,
+                recorded_at=datetime.combine(
+                    today - timedelta(days=days_ago), time(10, 0), tzinfo=zone
+                ).astimezone(UTC),
+            )
+            for days_ago, (feeling, note) in DEMO_FEELINGS.items()
+        ],
+    )
 
     care.save_appointment(
         elder,

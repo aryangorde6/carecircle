@@ -188,6 +188,25 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); }
 .dose-late .dose-status { color: var(--warn); font-weight: 600; }
 .dose-actions form { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
 
+.checkin-card h2 { margin-top: 0; }
+.checkin-change summary { cursor: pointer; font-weight: 600; color: var(--brand-dark); min-height: 44px; display: flex; align-items: center; }
+.feelings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.btn-feeling { min-height: 64px; font-size: 1.15em; background: var(--surface); color: var(--text); border-color: var(--line); flex-direction: column; gap: 0.1rem; }
+.btn-feeling span { font-size: 1.5em; line-height: 1; }
+.btn-feeling:hover { background: var(--brand-soft); border-color: var(--brand); }
+.btn-unwell:hover { background: var(--danger-soft); border-color: var(--danger); }
+.feeling-good { color: var(--brand-dark); }
+.feeling-unwell { color: var(--danger); }
+.feeling-list { list-style: none; padding: 0; display: grid; gap: 0.5rem; }
+.feeling-list li { display: grid; grid-template-columns: 7rem 1fr; gap: 0.75rem; }
+.notice-card { border-left: 6px solid var(--warn); background: var(--warn-soft); }
+.notice-card h2 { margin-top: 0; font-size: 1.2em; }
+.supply { font-weight: 600; }
+.supply-low { color: var(--warn); }
+.refill { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.75rem; }
+.refill label { font-weight: 600; }
+.refill input { width: 6.5rem; }
+
 /* Circle */
 .code-card { text-align: center; }
 .circle-code { font-size: 2.4em; font-weight: 800; letter-spacing: 0.25em; font-family: ui-monospace, monospace; }
@@ -207,6 +226,21 @@ thead th { background: var(--brand-soft); }
 meter { width: 100%; height: 1.4rem; }
 .summary-text { font-size: 1.1em; white-space: pre-line; }
 .stopped { margin-top: 2rem; }
+
+/* Visit sheet */
+.sheet h1 { margin-top: 0.5em; }
+.sheet section { break-inside: avoid; }
+.write-lines span { display: block; height: 2.2rem; border-bottom: 1px solid #8a877c; }
+
+@media print {
+  .site-header, .site-footer, .demo-banner, .messages, .no-print, .skip-link { display: none !important; }
+  body { background: #fff; font-size: 12pt; line-height: 1.45; }
+  .wrap { width: 100%; }
+  .sheet h1 { font-size: 18pt; margin-top: 0; }
+  .sheet h2 { font-size: 14pt; margin-top: 1em; }
+  thead th { background: #eee; }
+  a { color: inherit; text-decoration: none; }
+}
 
 @media (max-width: 56rem) {
   .hero { grid-template-columns: minmax(0, 1fr); gap: 0; }

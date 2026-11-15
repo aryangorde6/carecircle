@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -13,6 +12,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import Settings, load_settings
+from app.logging_config import configure_logging
 from app.routes import appointments, auth, circle, insights, medications, tasks, today
 from app.security import SECURITY_HEADERS, RateLimiter
 from app.services.ai import AiBudget, AiModel, AiService
@@ -22,7 +22,7 @@ from app.services.reminders import ReminderService
 from app.store import DocumentStore, InMemoryStore
 from app.web import TEMPLATES, LoginRequired, Services
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+configure_logging()
 SESSION_MAX_AGE = 12 * 60 * 60
 
 

@@ -15,9 +15,11 @@ from zoneinfo import ZoneInfo
 from app.models import (
     Access,
     Appointment,
+    CheckIn,
     Circle,
     DoseLog,
     DoseStatus,
+    Feeling,
     Medication,
     Member,
     Role,
@@ -61,6 +63,10 @@ def _doses(circle_id: str) -> str:
 
 def _appointments(circle_id: str) -> str:
     return f"{CIRCLES}/{circle_id}/appointments"
+
+
+def _check_ins(circle_id: str) -> str:
+    return f"{CIRCLES}/{circle_id}/checkins"
 
 
 def dose_log_id(medication_id: str, scheduled_for: datetime) -> str:
@@ -263,11 +269,15 @@ class CareService:
         start_date: date,
         end_date: date | None,
         medication_id: str | None = None,
+        supply: int | None = None,
     ) -> Medication:
         """Create or update a medication; requires edit access."""
         self._require_edit(actor)
+        alert_sent = False
         if medication_id is not None:
-            self.get_medication(actor.circle_id, medication_id)  # must exist in this circle
+            old = self.get_medication(actor.circle_id, medication_id)  # must exist in this circle
+            # A changed count is a fresh start for the refill alert.
+            alert_sent = old.refill_alert_sent and old.supply == supply
         med = Medication(
             id=medication_id or new_id(),
             circle_id=actor.circle_id,
@@ -277,8 +287,24 @@ class CareService:
             times=times,
             start_date=start_date,
             end_date=end_date,
+            supply=supply,
+            refill_alert_sent=alert_sent,
         )
-        self.store.put(_medications(actor.circle_id), med.id, med.model_dump(mode="json"))
+        self.save_medication_record(med)
+        return med
+
+    def save_medication_record(self, med: Medication) -> None:
+        self.store.put(_medications(med.circle_id), med.id, med.model_dump(mode="json"))
+
+    def refill_medication(self, actor: Member, medication_id: str, added: int) -> Medication:
+        """Add newly bought doses to the count and re-arm the low-supply alert."""
+        self._require_edit(actor)
+        if not 1 <= added <= 1000:
+            raise ValueError("added must be between 1 and 1000")
+        med = self.get_medication(actor.circle_id, medication_id)
+        med.supply = min((med.supply or 0) + added, 9999)
+        med.refill_alert_sent = False
+        self.save_medication_record(med)
         return med
 
     def stop_medication(self, actor: Member, medication_id: str) -> None:
@@ -349,10 +375,17 @@ class CareService:
                 scheduled_for=scheduled_for.astimezone(UTC),
             )
         )
+        previous = log.status
         log.status = status
         log.recorded_by = actor.name
         log.recorded_at = now or datetime.now(UTC)
         self.store.put(_doses(actor.circle_id), log.id, log.model_dump(mode="json"))
+        if med.supply is not None and previous != status:
+            if status == DoseStatus.TAKEN:
+                med.supply = max(med.supply - 1, 0)
+            elif previous == DoseStatus.TAKEN:
+                med.supply += 1  # a correction gives the dose back
+            self.save_medication_record(med)
         return log
 
     def save_dose_log(self, log: DoseLog) -> None:
@@ -370,6 +403,41 @@ class CareService:
     ) -> tuple[Adherence, dict[str, Adherence]]:
         """Overall and per-medication adherence for doses due before ``now``."""
         return summarise_adherence(self.schedule_for_days(circle, start, end), now, grace_minutes)
+
+    # ----- daily check-ins -------------------------------------------------
+
+    def record_check_in(
+        self,
+        actor: Member,
+        day: date,
+        feeling: Feeling,
+        note: str = "",
+        now: datetime | None = None,
+    ) -> CheckIn:
+        """Save how the elder feels today. The elder, or someone helping them, may record it."""
+        self._require_edit(actor)
+        check_in = CheckIn(
+            id=day.isoformat(),
+            circle_id=actor.circle_id,
+            day=day,
+            feeling=feeling,
+            note=note.strip(),
+            recorded_by=actor.name,
+            recorded_at=now or datetime.now(UTC),
+        )
+        self.store.put(_check_ins(actor.circle_id), check_in.id, check_in.model_dump(mode="json"))
+        return check_in
+
+    def save_check_ins(self, circle_id: str, check_ins: list[CheckIn]) -> None:
+        if check_ins:
+            self.store.put_many(
+                _check_ins(circle_id), {c.id: c.model_dump(mode="json") for c in check_ins}
+            )
+
+    def list_check_ins(self, circle_id: str, start: date, end: date) -> list[CheckIn]:
+        """Check-ins for the local days ``start``..``end``, oldest first."""
+        items = [CheckIn.model_validate(d) for d in self.store.list(_check_ins(circle_id))]
+        return sorted((c for c in items if start <= c.day <= end), key=lambda c: c.day)
 
     # ----- appointments ----------------------------------------------------
 

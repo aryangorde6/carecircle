@@ -19,7 +19,20 @@
     <p>Times: {{ m.times|join(', ') }}</p>
     {% if m.instructions %}<p class="hint">{{ m.instructions }}</p>{% endif %}
     <p class="hint">From {{ m.start_date.strftime('%d %b %Y') }}{% if m.end_date %} to {{ m.end_date.strftime('%d %b %Y') }}{% endif %}</p>
+    {% if m.supply is not none %}
+    <p class="supply{% if m.running_low %} supply-low{% endif %}">
+      {% if m.running_low %}<span aria-hidden="true">!</span> Running low: {% endif %}{{ m.supply }} dose{{ '' if m.supply == 1 else 's' }} left, about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }}
+    </p>
+    {% endif %}
     {% if member.can_edit %}
+    {% if m.supply is not none %}
+    <form method="post" action="/medications/{{ m.id }}/refill" class="refill">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <label for="added-{{ m.id }}">Doses bought<span class="visually-hidden"> for {{ m.name }}</span></label>
+      <input id="added-{{ m.id }}" name="added" type="number" inputmode="numeric" min="1" max="1000" step="1" required value="{{ (m.times|length) * 30 }}">
+      <button type="submit" class="btn btn-secondary">Refilled<span class="visually-hidden"> {{ m.name }}</span></button>
+    </form>
+    {% endif %}
     <div class="actions">
       <a class="btn btn-ghost" href="/medications/{{ m.id }}/edit">Edit<span class="visually-hidden"> {{ m.name }}</span></a>
       <form method="post" action="/medications/{{ m.id }}/stop">

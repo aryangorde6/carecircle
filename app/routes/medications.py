@@ -29,6 +29,11 @@ def _parse_date(raw: str) -> date | None:
     return date.fromisoformat(raw) if raw.strip() else None
 
 
+def _parse_supply(raw: str) -> int | None:
+    """Empty means 'not tracked'; otherwise a whole number of doses."""
+    return int(raw) if raw.strip() else None
+
+
 @router.get("", response_class=HTMLResponse)
 def list_medications(request: Request, member: MemberDep, services: ServicesDep) -> HTMLResponse:
     circle = services.care.get_circle(member.circle_id)
@@ -129,6 +134,7 @@ def _save(
     times: list[str],
     start_date: str,
     end_date: str,
+    supply: str,
 ) -> RedirectResponse:
     try:
         start = _parse_date(start_date) or datetime.now(UTC).date()
@@ -144,6 +150,7 @@ def _save(
             times=_parse_times(times),
             start_date=start,
             end_date=end,
+            supply=_parse_supply(supply),
         )
     except PermissionDenied as exc:
         flash(request, str(exc), "error")
@@ -154,7 +161,8 @@ def _save(
     except (ValidationError, ValueError):
         flash(
             request,
-            "Please check the form: a name, at least one time (HH:MM) and valid dates are needed.",
+            "Please check the form: a name, at least one time (HH:MM), valid dates "
+            "and a whole number of doses left are needed.",
             "error",
         )
         return redirect(
@@ -176,6 +184,7 @@ def create_medication(
     instructions: Annotated[str, Form(max_length=200)] = "",
     start_date: Annotated[str, Form(max_length=10)] = "",
     end_date: Annotated[str, Form(max_length=10)] = "",
+    supply: Annotated[str, Form(max_length=4)] = "",
 ) -> RedirectResponse:
     return _save(
         request,
@@ -188,6 +197,7 @@ def create_medication(
         times=times,
         start_date=start_date,
         end_date=end_date,
+        supply=supply,
     )
 
 
@@ -204,6 +214,7 @@ def update_medication(
     instructions: Annotated[str, Form(max_length=200)] = "",
     start_date: Annotated[str, Form(max_length=10)] = "",
     end_date: Annotated[str, Form(max_length=10)] = "",
+    supply: Annotated[str, Form(max_length=4)] = "",
 ) -> RedirectResponse:
     return _save(
         request,
@@ -216,7 +227,34 @@ def update_medication(
         times=times,
         start_date=start_date,
         end_date=end_date,
+        supply=supply,
     )
+
+
+@router.post("/{medication_id}/refill")
+def refill_medication(
+    request: Request,
+    medication_id: str,
+    member: MemberDep,
+    services: ServicesDep,
+    _csrf: CsrfDep,
+    added: Annotated[str, Form(max_length=4)] = "",
+) -> RedirectResponse:
+    try:
+        med = services.care.refill_medication(member, medication_id, int(added))
+    except PermissionDenied as exc:
+        flash(request, str(exc), "error")
+    except NotFound:
+        flash(request, "That medicine was not found.", "error")
+    except ValueError:
+        flash(request, "Enter how many doses you bought, from 1 to 1000.", "error")
+    else:
+        flash(
+            request,
+            f"{med.name}: {med.supply} doses in hand, about {med.days_left} days.",
+            "success",
+        )
+    return redirect("/medications")
 
 
 @router.post("/{medication_id}/stop")

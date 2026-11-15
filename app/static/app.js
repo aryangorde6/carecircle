@@ -21,6 +21,12 @@
       return;
     }
 
+    // Print the visit sheet (the button is hidden until JavaScript is available).
+    if (event.target.closest("[data-print]")) {
+      window.print();
+      return;
+    }
+
     // Read aloud with the browser's built-in speech synthesis.
     const speakBtn = event.target.closest("[data-speak]");
     if (speakBtn && "speechSynthesis" in window) {
@@ -32,6 +38,8 @@
       window.speechSynthesis.speak(utterance);
     }
   });
+
+  document.querySelectorAll("[data-print]").forEach(function (btn) { btn.hidden = false; });
 
   // Hide the read-aloud button where speech is not supported.
   if (!("speechSynthesis" in window)) {

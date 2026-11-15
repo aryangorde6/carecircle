@@ -9,6 +9,8 @@ Ladder for a dose that has not been marked:
   * 30 min after          -> "missed" to the elder and caretakers
   * 60 min after          -> "escalated" to family as well
 Appointments get a reminder 24 hours and 2 hours before, to everyone.
+A medicine with about five days of supply left triggers one refill email to
+the elder and caretakers; buying more re-arms it.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from app.models import Circle, DoseLog, Member, Role, ScheduledDose
+from app.models import REFILL_DAYS, Circle, DoseLog, Medication, Member, Role, ScheduledDose
 from app.services.care import CareService, dose_log_id
 from app.services.emailer import Emailer
 
@@ -114,6 +116,21 @@ class ReminderService:
             for dose in stage_doses:
                 self._mark_dose(circle, dose, stage)
 
+        # Refill alerts reuse the medicines already loaded with the schedule.
+        meds = {dose.medication.id: dose.medication for dose in doses}
+        low = sorted(
+            (m for m in meds.values() if m.running_low and not m.refill_alert_sent),
+            key=lambda m: m.name.lower(),
+        )
+        if low:
+            to = _emails(elder + caretakers)
+            if to:
+                self.emailer.send(to, *self._refill_message(circle, low))
+                report.add("refill")
+            for med in low:
+                med.refill_alert_sent = True
+                self.care.save_medication_record(med)
+
         everyone = _emails(members)
         for appt in self.care.list_appointments(circle.id, upcoming_from=now):
             reached = [kind for kind, lead in APPOINTMENT_STEPS if appt.starts_at - now <= lead]
@@ -179,6 +196,26 @@ class ReminderService:
             ]
         )
         return subject, body
+
+    def _refill_message(self, circle: Circle, meds: list[Medication]) -> tuple[str, str]:
+        lines = [
+            f"  - {m.name} {m.dosage}".rstrip()
+            + f": about {m.days_left} days left ({m.supply} doses)"
+            for m in meds
+        ]
+        body = "\n".join(
+            [
+                f"Time to buy more medicine for {circle.elder_name}. "
+                f"These have {REFILL_DAYS} days or less left:",
+                "",
+                *lines,
+                "",
+                f"After buying, press Refilled in CareCircle: {self.base_url}/medications",
+                "",
+                "You get this email because you are in this CareCircle.",
+            ]
+        )
+        return f"Running low on medicine for {circle.elder_name}", body
 
     def _appointment_body(
         self, circle: Circle, doctor: str, purpose: str, location: str, local: datetime

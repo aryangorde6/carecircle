@@ -5,7 +5,7 @@
   <h1>Appointments</h1>
   {% if member.can_edit %}<a class="btn btn-primary" href="/appointments/new">Add an appointment</a>{% endif %}
 </div>
-<p class="hint">Everyone in the circle with an email gets a reminder 24 hours and 2 hours before.</p>
+<p class="hint">Everyone in the circle with an email gets a reminder 24 hours and 2 hours before. Open the visit sheet to print medicines, adherence and questions for the doctor.</p>
 
 <section aria-labelledby="up-title">
   <h2 id="up-title">Upcoming</h2>
@@ -19,9 +19,15 @@
       {% if a.location %}<p class="hint">{{ a.location }}</p>{% endif %}
       {% if a.notes %}<p class="hint">Notes: {{ a.notes }}</p>{% endif %}
       <div class="actions">
+        <a class="btn btn-primary" href="/appointments/{{ a.id }}/sheet">Visit sheet<span class="visually-hidden"> for {{ a.doctor }}</span></a>
         <a class="btn btn-secondary" href="{{ calendar_url(a) }}" target="_blank" rel="noopener noreferrer">
           Add to Google Calendar<span class="visually-hidden"> (opens in a new tab)</span>
         </a>
+        {% if a.location %}
+        <a class="btn btn-ghost" href="{{ maps_url(a.location) }}" target="_blank" rel="noopener noreferrer">
+          Directions<span class="visually-hidden"> to {{ a.location }} in Google Maps (opens in a new tab)</span>
+        </a>
+        {% endif %}
         {% if member.can_edit %}
         <a class="btn btn-ghost" href="/appointments/{{ a.id }}/edit">Edit<span class="visually-hidden"> appointment with {{ a.doctor }}</span></a>
         <form method="post" action="/appointments/{{ a.id }}/delete">

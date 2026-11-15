@@ -1,10 +1,10 @@
-"""Doctor appointments, with one-click 'Add to Google Calendar' links."""
+"""Doctor appointments: Google Calendar and Maps links, reminders, and a printable visit sheet."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
-from urllib.parse import urlencode
+from urllib.parse import quote_plus, urlencode
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Form, Request
@@ -12,7 +12,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
 from app.models import Appointment, Member
-from app.services.care import NotFound, PermissionDenied
+from app.routes.insights import latest_summary
+from app.services.care import NotFound, PermissionDenied, summarise_adherence
 from app.web import CsrfDep, MemberDep, Services, ServicesDep, flash, redirect, render
 
 router = APIRouter(prefix="/appointments")
@@ -33,6 +34,11 @@ def google_calendar_url(appt: Appointment, elder_name: str) -> str:
     return "https://calendar.google.com/calendar/render?" + urlencode(params)
 
 
+def google_maps_url(location: str) -> str:
+    """A Google Maps search link for the clinic, so the family can get directions."""
+    return "https://www.google.com/maps/search/?api=1&query=" + quote_plus(location)
+
+
 @router.get("", response_class=HTMLResponse)
 def list_appointments(request: Request, member: MemberDep, services: ServicesDep) -> HTMLResponse:
     circle = services.care.get_circle(member.circle_id)
@@ -49,6 +55,45 @@ def list_appointments(request: Request, member: MemberDep, services: ServicesDep
         past=list(reversed(past)),
         zone=ZoneInfo(circle.timezone),
         calendar_url=lambda a: google_calendar_url(a, circle.elder_name),
+        maps_url=google_maps_url,
+    )
+
+
+@router.get("/{appointment_id}/sheet", response_class=HTMLResponse)
+def visit_sheet(
+    request: Request, appointment_id: str, member: MemberDep, services: ServicesDep
+) -> Response:
+    """One printable page to take to the doctor: medicines, adherence, feelings, questions."""
+    care = services.care
+    try:
+        appt = care.get_appointment(member.circle_id, appointment_id)
+    except NotFound:
+        flash(request, "That appointment was not found.", "error")
+        return redirect("/appointments")
+    circle = care.get_circle(member.circle_id)
+    zone = ZoneInfo(circle.timezone)
+    now = datetime.now(UTC)
+    today = now.astimezone(zone).date()
+    overall, per_med = summarise_adherence(
+        care.schedule_for_days(circle, today - timedelta(days=29), today), now
+    )
+    check_ins = care.list_check_ins(circle.id, today - timedelta(days=13), today)
+    summary, _ = latest_summary(care, circle.id)
+    return render(
+        request,
+        "visit_sheet.html",
+        member=member,
+        circle=circle,
+        appt=appt,
+        when=appt.starts_at.astimezone(zone),
+        today=today,
+        meds=care.list_medications(circle.id),
+        overall=overall,
+        per_med=per_med,
+        check_ins=check_ins,
+        unwell=[c for c in check_ins if c.feeling.value != "good"],
+        good_days=sum(1 for c in check_ins if c.feeling.value == "good"),
+        summary=summary,
     )
 
 

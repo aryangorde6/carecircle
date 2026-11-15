@@ -29,6 +29,11 @@
     <label for="instructions">Instructions <span class="optional">(optional)</span></label>
     <input id="instructions" name="instructions" maxlength="200" placeholder="e.g. after food" value="{{ med.instructions if med else '' }}">
   </div>
+  <div class="field">
+    <label for="supply">Doses left <span class="optional">(optional)</span></label>
+    <input id="supply" name="supply" type="number" inputmode="numeric" min="0" max="9999" step="1" aria-describedby="supply-hint" value="{{ med.supply if med and med.supply is not none else '' }}">
+    <p class="hint" id="supply-hint">For example, the tablets left in the strip. CareCircle counts down each time a dose is marked taken and emails the circle when about 5 days are left.</p>
+  </div>
   <div class="grid-2">
     <div class="field">
       <label for="start_date">Start date</label>

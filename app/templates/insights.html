@@ -31,6 +31,20 @@
 </section>
 {% endif %}
 
+<section aria-labelledby="f-title">
+  <h2 id="f-title">How {{ circle.elder_name }} felt this week</h2>
+  {% if check_ins %}
+  <ul class="feeling-list">
+    {% for c in check_ins %}
+    <li><span class="hint">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
+    {% endfor %}
+  </ul>
+  <p class="hint">From the daily check-in on the Today page. The weekly update below takes these into account.</p>
+  {% else %}
+  <p>No check-ins this week yet. {{ circle.elder_name }} can share how they feel on the <a href="/today#checkin">Today</a> page.</p>
+  {% endif %}
+</section>
+
 <section class="card" id="summary" aria-labelledby="s-title">
   <h2 id="s-title">Weekly family update</h2>
   {% if summary %}

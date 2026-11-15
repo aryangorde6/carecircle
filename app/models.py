@@ -10,6 +10,9 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
+# Warn the circle when a medicine has this many days (or fewer) left.
+REFILL_DAYS = 5
+
 
 class Role(StrEnum):
     ELDER = "elder"
@@ -25,6 +28,16 @@ class Access(StrEnum):
 class DoseStatus(StrEnum):
     TAKEN = "taken"
     SKIPPED = "skipped"
+
+
+class Feeling(StrEnum):
+    GOOD = "good"
+    OKAY = "okay"
+    UNWELL = "unwell"
+
+    @property
+    def label(self) -> str:
+        return {"good": "Good", "okay": "Okay", "unwell": "Not well"}[self.value]
 
 
 class Circle(BaseModel):
@@ -70,6 +83,9 @@ class Medication(BaseModel):
     start_date: date
     end_date: date | None = None
     active: bool = True
+    # Doses in hand, counted down when a dose is marked taken. None = not tracked.
+    supply: int | None = Field(default=None, ge=0, le=9999)
+    refill_alert_sent: bool = False
 
     @field_validator("times")
     @classmethod
@@ -87,6 +103,17 @@ class Medication(BaseModel):
             return False
         return self.end_date is None or day <= self.end_date
 
+    @property
+    def days_left(self) -> int | None:
+        """Whole days of medicine left at the current dose times, if supply is tracked."""
+        if self.supply is None:
+            return None
+        return self.supply // len(self.times)
+
+    @property
+    def running_low(self) -> bool:
+        return self.active and self.days_left is not None and self.days_left <= REFILL_DAYS
+
 
 class DoseLog(BaseModel):
     """What happened to one scheduled dose, plus which reminders were sent."""
@@ -99,6 +126,18 @@ class DoseLog(BaseModel):
     recorded_by: str | None = None
     recorded_at: datetime | None = None
     reminders_sent: list[str] = Field(default_factory=list)
+
+
+class CheckIn(BaseModel):
+    """How the elder said they felt on one local day (one per day, latest wins)."""
+
+    id: str
+    circle_id: str
+    day: date
+    feeling: Feeling
+    note: str = Field(default="", max_length=280)
+    recorded_by: str
+    recorded_at: datetime
 
 
 class Appointment(BaseModel):
