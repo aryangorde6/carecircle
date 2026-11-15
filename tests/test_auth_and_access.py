@@ -181,3 +181,8 @@ def test_docs_hidden_in_production(store):
     assert "strict-transport-security" in client.get("/").headers
     # With no audience configured, production refuses scheduler calls.
     assert client.post("/tasks/reminders").status_code == 401
+
+
+def test_head_requests_supported_for_uptime_checks(client):
+    assert client.head("/").status_code == 200
+    assert client.head("/healthz").status_code == 200

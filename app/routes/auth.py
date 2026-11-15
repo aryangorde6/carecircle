@@ -34,7 +34,7 @@ def _start_session(request: Request, circle_id: str, member_id: str) -> None:
     request.session["member_id"] = member_id
 
 
-@router.get("/", response_class=HTMLResponse)
+@router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def home(request: Request) -> Response:
     if request.session.get("member_id"):
         return redirect("/today")
@@ -131,6 +131,6 @@ def favicon() -> RedirectResponse:
     return RedirectResponse("/static/favicon.svg", status_code=301)
 
 
-@router.get("/healthz", include_in_schema=False)
+@router.api_route("/healthz", methods=["GET", "HEAD"], include_in_schema=False)
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
