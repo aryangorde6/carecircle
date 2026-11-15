@@ -22,11 +22,11 @@ Most reminder apps nag one person. CareCircle treats medication as a team effort
 | Shared ecosystem for elders, caretakers and family | One **care circle** per elder, with three roles: elder, caretaker, family |
 | Secure, passcode-based access | Every person has **their own passcode** (Argon2id-hashed) plus the circle code; sign-in is rate-limited |
 | View, add, edit and manage medication schedules | Medicines with dose, instructions, several daily times, start and end dates; stop without losing history; **supply count** that ticks down as doses are taken |
-| Track adherence | One-tap **"I took it" / "Skip"** per dose, who marked it, 7- and 30-day adherence overall and per medicine |
+| Track adherence | One-tap **"I took it" / "Skip"** per dose, or **say it by voice in any language**; who marked it, 7- and 30-day adherence overall and per medicine |
 | Monitor upcoming doctor appointments | Appointment list with reason, place and notes, **Add to Google Calendar**, **Google Maps directions** and a printable **visit sheet** |
 | Email reminders for upcoming doses, missed doses and appointments | Cloud Scheduler runs the reminder job every 5 minutes; see the escalation ladder below. Plus a **refill email** when a medicine is running low |
-| Beyond a basic reminder app | Gemini **prescription reader**, **escalating** reminders, **refill alerts**, a **daily wellbeing check-in**, a Gemini **weekly family update in 8 languages** and a **doctor-visit sheet** |
-| Elder at the centre of their own decisions | Only the elder can add or remove people and switch them between view-only and edit. The elder's own **"How are you feeling today?"** goes into the weekly update and the visit sheet, and the circle is emailed about a bad day **only if the elder chooses** |
+| Beyond a basic reminder app | **Voice notes in the elder's own language** (Gemini listens), an **emergency fridge card** with a QR code, Gemini **prescription reader**, **escalating** reminders, **refill alerts**, a **daily wellbeing check-in**, a Gemini **weekly family update in 8 languages** and a **doctor-visit sheet** |
+| Elder at the centre of their own decisions | Only the elder can add or remove people and switch them between view-only and edit. The elder's own **"How are you feeling today?"** goes into the weekly update and the visit sheet, and the circle is emailed about a bad day **only if the elder chooses**. Only the elder can turn the emergency card on or off. Voice notes are only suggestions until the elder confirms them |
 
 ## Features
 
@@ -66,6 +66,12 @@ Enter how many doses are in hand. Each dose marked *taken* counts down (a correc
 ### 9. Doctor-visit sheet
 Every appointment has a printable one-page **visit sheet**: current medicines with 30-day adherence for each, how the elder has felt over two weeks (bad days with their notes), the appointment notes, Gemini's suggested questions, and space to write the doctor's advice. **Print or save as PDF** and take it to the clinic.
 
+### 10. Voice notes in the elder's own language (Gemini)
+Not everyone can read small buttons or type in English. On **Today**, the elder presses **Start speaking** and says something like *"सुबह की दवाई ले ली, थोड़ा चक्कर आ रहा है"* ("I took the morning medicine, feeling a bit dizzy"). Gemini listens, matches it against today's numbered dose list and suggests: *Amlodipine 9:00 AM, taken* and *Feeling: not well, "a bit dizzy"*, with a reply in the speaker's language that can be read aloud. **Nothing is saved until the elder ticks and confirms**, and a bad day is shared with the family only if they tick that box too. Without JavaScript, the same form accepts a voice note from the phone's recorder.
+
+### 11. Emergency fridge card
+The elder can turn on a **QR code for the fridge or wallet**. Anyone who scans it, such as a neighbour, a doctor or an ambulance crew, sees the current medicines, allergies, blood group, health conditions and emergency contacts, with a big **Call 112** button, and needs no passcode. **Everyone in the circle is emailed when the card is opened**, so it doubles as an early alarm. Only the elder can turn it on or off, and **Make a new link** retires old printed cards. The demo circle has it switched on: open **Circle → Print the fridge card** and scan it with a phone.
+
 ## Architecture
 
 ```
@@ -95,7 +101,7 @@ app/
     ai.py              prompts, daily AI budget, AI service
     gemini_client.py   Gemini on Vertex AI (Google Gen AI SDK)
     emailer.py         SMTP and console email backends
-  routes/              auth, today (doses, check-ins), medications, appointments (visit sheet), circle, insights, tasks
+  routes/              auth, today (doses, check-ins), voice, medications, appointments (visit sheet), circle, card (emergency card), insights, tasks
   templates/, static/  accessible HTML, CSS and a little progressive-enhancement JS
 tests/                 pytest suite with fakes for Firestore, Gemini and email
 ```
@@ -108,7 +114,7 @@ The domain layer depends only on a small `DocumentStore` interface, so the same 
 |---|---|
 | **Cloud Run** | Hosting the containerised app |
 | **Cloud Firestore** | All circle data, with each circle's records in its own sub-collections |
-| **Vertex AI (Gemini)** | Prescription reading (multimodal, structured output) and the weekly summary |
+| **Vertex AI (Gemini)** | Prescription reading (image), voice notes (audio, any Indian language) and the weekly summary, all with structured output |
 | **Cloud Scheduler** | Calls the reminder job every 5 minutes with a Google-signed OIDC token |
 | **Secret Manager** | Session signing key and SMTP password, injected at runtime |
 | **Cloud Build / Artifact Registry** | Building and storing the container image |
@@ -126,7 +132,9 @@ Gemini and Firestore authenticate with the Cloud Run service account, so **there
 - **CSRF tokens** on every state-changing form, compared in constant time.
 - **Consent for sharing:** a "Not well" check-in emails the circle only when the elder ticks the box, is never sent to the person who shared it, and is rate-limited per circle.
 - **Object-level authorization:** every lookup is scoped to the signed-in member's circle path, so an id from another circle can never resolve (covered by tests). Edit rights and elder-only actions are enforced server-side, not just hidden in the UI.
-- **Uploads** are accepted only as JPEG, PNG or WebP by **magic bytes**, capped at 5 MB, processed in memory and never stored or executed.
+- **Uploads** are accepted only as JPEG, PNG or WebP photos, or WebM, Ogg, MP4, MP3, WAV or FLAC voice notes, by **magic bytes**, size-capped, processed in memory and never stored or executed.
+- **Emergency card:** an unguessable 128-bit link that only the elder can turn on, replace or turn off; it shows only what helps in an emergency, is rate-limited per address, sent with `noindex` and `no-referrer`, and every opening is recorded and emailed to the circle.
+- **Voice notes:** Gemini's suggestions are checked against today's real doses, shown as tick boxes and saved only through the same permission checks as the normal buttons.
 - **AI safety:** prompts treat user content strictly as data, outputs are schema-validated, shown for human review and HTML-escaped; the model cannot trigger actions. The summary language comes from a fixed allow-list, never free text.
 - **AI spending stop:** a hard daily cap on Gemini calls (Firestore counter) plus a per-member hourly limit.
 - **Scheduler endpoint** accepts only Google-signed OIDC tokens for the configured audience and service account.
@@ -146,12 +154,12 @@ Server-rendered pages with one small CSS file and one small script, gzip compres
 
 ```bash
 uv sync
-uv run pytest          # 70 tests, ~90% coverage
+uv run pytest          # 96 tests, ~90% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```
 
-The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths, every step of the reminder ladder with fixed clocks, supply counting and refill alerts, check-in consent (no email without the elder's tick), the summary language allow-list, the visit sheet and structured logging. GitHub Actions runs lint, tests and the dependency audit on every push.
+The suite covers passcode sign-in, rate limiting, CSRF, role and elder-only permissions, cross-circle isolation, XSS escaping, upload validation, the AI budget, prescription review, weekly summaries, appointments, adherence maths, every step of the reminder ladder with fixed clocks, supply counting and refill alerts, check-in consent (no email without the elder's tick), the summary language allow-list, the visit sheet, the emergency card (elder-only switch, retired links, open alerts, rate limit, no-index headers), voice notes (audio magic bytes, dropped out-of-range or tampered doses, nothing saved before confirmation, viewers refused) and structured logging. GitHub Actions runs lint, tests and the dependency audit on every push.
 
 ## Run locally
 
