@@ -86,4 +86,3 @@ def test_daily_budget_is_a_hard_stop():
 @pytest.mark.parametrize(("code", "voice"), [("hi", "hi-IN"), ("TA", "ta-IN"), ("", "en-IN")])
 def test_voice_for(code, voice):
     assert voice_for(code) == voice
-
