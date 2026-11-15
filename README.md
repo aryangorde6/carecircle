@@ -10,6 +10,8 @@ Most reminder apps nag one person. CareCircle treats medication as a team effort
 | Today, for the elder | Weekly family update by Gemini | On a phone |
 |---|---|---|
 | ![Today screen: large text summary saying one dose is not taken yet, a Read aloud button and the day's medicines](docs/today.jpg) | ![Insights: 7- and 30-day adherence, a bar per medicine and a Gemini-written weekly summary with questions for the doctor](docs/insights.jpg) | ![The Today screen on a 375-pixel-wide phone, with the same large text and buttons](docs/mobile.jpg) |
+| **"How are you feeling today?"** | **The weekly update in Hindi** | **Doctor-visit sheet** |
+| ![Daily check-in card with a note box, a tick box to email caretakers and family only if the elder chooses, and three large buttons: Good, Okay, Not well](docs/checkin.jpg) | ![Weekly family update written by Gemini in Hindi, mentioning the dizzy morning, with questions for the doctor in Hindi and a language menu](docs/hindi-summary.jpg) | ![Printable visit sheet for the cardiologist: current medicines with 30-day adherence for each, and how the elder has felt over two weeks](docs/visit-sheet.jpg) |
 
 ---
 
