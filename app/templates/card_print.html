@@ -9,8 +9,7 @@
 <article class="fridge-card" aria-labelledby="fc-title">
   <div class="fridge-head">
     <div>
-      <p class="eyebrow">In an emergency</p>
-      <h1 id="fc-title">{{ circle.elder_name }}</h1>
+      <h1 id="fc-title"><span class="em-name">{{ circle.elder_name }}</span> <span class="em-kind">Emergency card</span></h1>
       <p class="big"><strong>Call 112</strong>, then scan the code for medicines and contacts.</p>
     </div>
     <img src="{{ qr }}" alt="QR code that opens {{ circle.elder_name }}'s emergency card" width="220" height="220">

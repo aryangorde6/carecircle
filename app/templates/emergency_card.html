@@ -2,8 +2,7 @@
 {% block title %}Emergency card{% endblock %}
 {% block content %}
 <article class="emergency" aria-labelledby="em-title">
-  <p class="eyebrow">Emergency medical card</p>
-  <h1 id="em-title">{{ card.elder_name }}</h1>
+  <h1 id="em-title"><span class="em-name">{{ card.elder_name }}</span> <span class="em-kind">Emergency medical card</span></h1>
   {% if card.demo %}<p class="hint">Sample person from a CareCircle demo. Not a real patient.</p>{% endif %}
   <p><a class="btn btn-emergency" href="tel:112">Call 112, emergency services</a></p>
 

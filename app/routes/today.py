@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Form, Request
@@ -73,6 +74,8 @@ def record_dose(
         med = services.care.get_medication(member.circle_id, log.medication_id)
         verb = "taken" if status == DoseStatus.TAKEN else "skipped"
         flash(request, f"{med.name} marked as {verb}.", "success")
+        # The entry that was just stamped gets the stamp-down animation.
+        return redirect(f"/today?stamped={quote(log.id)}")
     return redirect("/today")
 
 

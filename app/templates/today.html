@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Today{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <div class="page-head">
   <h1>Today for {{ circle.elder_name }}</h1>
   <p class="hint">{{ today.strftime('%A %d %B') }}</p>
@@ -11,12 +12,12 @@
   {% if not doses %}
     <p class="big">No medicines scheduled today.</p>
   {% elif pending_count == 0 %}
-    <p class="big"><span aria-hidden="true">✔</span> All of today's medicines are done. Well done!</p>
+    <p class="big">All of today's medicines are done. Well done!</p>
   {% else %}
     <p class="big" id="speak-text">{{ pending_count }} medicine{{ '' if pending_count == 1 else 's' }} left today.
       {% if next_dose %}{% if next_dose.scheduled_for < now %}Not taken yet: {{ next_dose.medication.name }} {{ next_dose.medication.dosage }}, due at {% else %}Next: {{ next_dose.medication.name }} {{ next_dose.medication.dosage }} at {% endif %}{{ next_dose.scheduled_for.astimezone(zone).strftime('%I:%M %p') }}{% if next_dose.medication.instructions %}, {{ next_dose.medication.instructions }}{% endif %}.{% endif %}</p>
     <button type="button" class="btn btn-secondary" data-speak="#speak-text">
-      <span aria-hidden="true">🔊</span> Read aloud
+      {{ icons.speaker() }} Read aloud
     </button>
   {% endif %}
   {% if week.percent is not none %}
@@ -26,7 +27,7 @@
 
 {% if low_meds %}
 <section class="card notice-card" aria-labelledby="low-title">
-  <h2 id="low-title"><span aria-hidden="true">!</span> Running low</h2>
+  <h2 id="low-title">Running low</h2>
   <ul class="plain-list">
     {% for m in low_meds %}<li><strong>{{ m.name }}</strong>: about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }} left</li>{% endfor %}
   </ul>
@@ -37,19 +38,21 @@
 <section aria-labelledby="doses-title">
   <h2 id="doses-title">Medicines</h2>
   {% if doses %}
+  {% set stamped = request.query_params.get('stamped', '') %}
+  <div class="entry-head" aria-hidden="true"><span>Time</span><span>Medicine</span><span>Entry</span></div>
   <ol class="dose-list">
     {% for d in doses %}
     {% set local = d.scheduled_for.astimezone(zone) %}
     {% set late = d.status is none and d.scheduled_for < now %}
-    <li class="dose {% if d.status %}dose-{{ d.status.value }}{% elif late %}dose-late{% endif %}">
+    <li class="dose {% if d.status %}dose-{{ d.status.value }}{% elif late %}dose-late{% endif %}{% if d.log and d.log.id == stamped %} just-stamped{% endif %}">
       <div class="dose-time">{{ local.strftime('%I:%M %p') }}</div>
       <div class="dose-info">
         <p class="dose-name">{{ d.medication.name }} <span class="dose-dosage">{{ d.medication.dosage }}</span></p>
         {% if d.medication.instructions %}<p class="hint">{{ d.medication.instructions }}</p>{% endif %}
         <p class="dose-status">
-          {% if d.status and d.status.value == 'taken' %}<span aria-hidden="true">✔</span> Taken{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
-          {% elif d.status %}<span aria-hidden="true">–</span> Skipped{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
-          {% elif late %}<span aria-hidden="true">!</span> Not marked yet
+          {% if d.status and d.status.value == 'taken' %}Taken{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
+          {% elif d.status %}Skipped{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
+          {% elif late %}<span class="lamp">Due now</span> Not marked yet
           {% else %}Due later{% endif %}
         </p>
       </div>
@@ -67,6 +70,8 @@
           </button>
         </form>
       </div>
+      {% elif d.status and d.log %}
+      <div class="dose-stamp" aria-hidden="true"><span class="stamp{% if d.status.value == 'skipped' %} stamp-skipped{% endif %}">{{ d.status.value }}{% if d.log.recorded_at %}<small>{{ d.log.recorded_at.astimezone(zone).strftime('%I:%M %p') }}</small>{% endif %}</span></div>
       {% endif %}
     </li>
     {% endfor %}
@@ -83,8 +88,8 @@
   <form method="post" action="/voice" enctype="multipart/form-data" class="stack" data-voice>
     <input type="hidden" name="csrf" value="{{ csrf_token }}">
     <div class="voice-controls" data-voice-controls hidden>
-      <button type="button" class="btn btn-primary btn-big" data-voice-start><span aria-hidden="true">🎤</span> Start speaking</button>
-      <button type="button" class="btn btn-secondary btn-big" data-voice-stop hidden><span aria-hidden="true">■</span> Stop and check</button>
+      <button type="button" class="btn btn-primary btn-big" data-voice-start>{{ icons.mic() }} Start speaking</button>
+      <button type="button" class="btn btn-secondary btn-big" data-voice-stop hidden>Stop and check</button>
       <p class="hint" data-voice-status role="status" aria-live="polite"></p>
     </div>
     <div class="voice-file stack" data-voice-file>
@@ -99,11 +104,10 @@
 </section>
 {% endif %}
 
-{% set feeling_icons = {'good': '🙂', 'okay': '😐', 'unwell': '🙁'} %}
 <section class="card checkin-card" id="checkin" aria-labelledby="checkin-title">
   <h2 id="checkin-title">{% if member.is_elder %}How are you feeling today?{% else %}How is {{ circle.elder_name }} feeling today?{% endif %}</h2>
   {% if check_in %}
-    <p class="big feeling feeling-{{ check_in.feeling.value }}"><span aria-hidden="true">{{ feeling_icons[check_in.feeling.value] }}</span> {{ check_in.feeling.label }}{% if check_in.note %}: “{{ check_in.note }}”{% endif %}</p>
+    <p class="big feeling feeling-{{ check_in.feeling.value }}">{{ icons.face(check_in.feeling.value) }} {{ check_in.feeling.label }}{% if check_in.note %}: “{{ check_in.note }}”{% endif %}</p>
     <p class="hint">Shared by {{ check_in.recorded_by }} at {{ check_in.recorded_at.astimezone(zone).strftime('%I:%M %p') }}.</p>
   {% elif not member.can_edit %}
     <p>Not shared yet today.</p>
@@ -118,9 +122,9 @@
       </div>
       <label class="check"><input type="checkbox" name="tell" value="yes"> If I choose “Not well”, email my caretakers and family</label>
       <div class="feelings" role="group" aria-labelledby="checkin-title">
-        <button type="submit" name="feeling" value="good" class="btn btn-feeling"><span aria-hidden="true">🙂</span> Good</button>
-        <button type="submit" name="feeling" value="okay" class="btn btn-feeling"><span aria-hidden="true">😐</span> Okay</button>
-        <button type="submit" name="feeling" value="unwell" class="btn btn-feeling btn-unwell"><span aria-hidden="true">🙁</span> Not well</button>
+        <button type="submit" name="feeling" value="good" class="btn btn-feeling">{{ icons.face('good') }} Good</button>
+        <button type="submit" name="feeling" value="okay" class="btn btn-feeling">{{ icons.face('okay') }} Okay</button>
+        <button type="submit" name="feeling" value="unwell" class="btn btn-feeling btn-unwell">{{ icons.face('unwell') }} Not well</button>
       </div>
     </form>
   {% if check_in %}</details>{% endif %}

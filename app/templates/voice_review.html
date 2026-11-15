@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Check your voice note{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <h1>Is this right?</h1>
 
 <section class="card" aria-labelledby="heard-title">
@@ -11,7 +12,7 @@
   {% endif %}
   {% if note.reply %}
   <p id="voice-reply" {% if note.language_code %}lang="{{ note.language_code }}"{% endif %}>{{ note.reply }}</p>
-  <button type="button" class="btn btn-ghost" data-speak="#voice-reply"><span aria-hidden="true">🔊</span> Read aloud</button>
+  <button type="button" class="btn btn-ghost" data-speak="#voice-reply">{{ icons.speaker() }} Read aloud</button>
   {% endif %}
 </section>
 

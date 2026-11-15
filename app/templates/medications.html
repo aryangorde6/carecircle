@@ -6,7 +6,7 @@
   {% if member.can_edit %}
   <div class="actions">
     <a class="btn btn-primary" href="/medications/new">Add a medicine</a>
-    <a class="btn btn-secondary" href="/medications/scan"><span aria-hidden="true">📷</span> Scan a prescription</a>
+    <a class="btn btn-secondary" href="/medications/scan">Scan a prescription</a>
   </div>
   {% endif %}
 </div>
@@ -21,7 +21,7 @@
     <p class="hint">From {{ m.start_date.strftime('%d %b %Y') }}{% if m.end_date %} to {{ m.end_date.strftime('%d %b %Y') }}{% endif %}</p>
     {% if m.supply is not none %}
     <p class="supply{% if m.running_low %} supply-low{% endif %}">
-      {% if m.running_low %}<span aria-hidden="true">!</span> Running low: {% endif %}{{ m.supply }} dose{{ '' if m.supply == 1 else 's' }} left, about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }}
+      {% if m.running_low %}Running low: {% endif %}{{ m.supply }} dose{{ '' if m.supply == 1 else 's' }} left, about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }}
     </p>
     {% endif %}
     {% if member.can_edit %}

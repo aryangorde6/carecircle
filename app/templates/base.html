@@ -9,13 +9,15 @@
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <script src="/static/app.js?v={{ asset_version }}" defer></script>
 </head>
+{% import "_icons.html" as icons %}
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
   <header class="site-header">
     <div class="wrap header-row">
       <a class="brand" href="/" aria-label="CareCircle home">
-        <span class="brand-mark" aria-hidden="true">◎</span> CareCircle
+        {{ icons.mark() }} CareCircle
       </a>
+      {% if circle and member %}<p class="holder">Care book of <strong>{{ circle.elder_name }}</strong></p>{% endif %}
       <div class="text-size" role="group" aria-label="Text size">
         <button type="button" class="btn-ghost" data-text-size="normal" aria-pressed="true">A</button>
         <button type="button" class="btn-ghost text-lg" data-text-size="large" aria-pressed="false">A+</button>
