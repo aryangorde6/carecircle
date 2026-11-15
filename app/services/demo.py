@@ -88,7 +88,7 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
 
     # Leave today's most recent due dose unmarked so the reminder ladder is visible.
     due_today = [
-        (datetime.combine(today, time(*(int(p) for p in slot.split(":"))), tzinfo=zone), med.id)
+        (datetime.combine(today, time.fromisoformat(slot), tzinfo=zone), med.id)
         for med in meds
         for slot in med.times
     ]

@@ -50,7 +50,7 @@ def list_medications(request: Request, member: MemberDep, services: ServicesDep)
 
 
 @router.get("/new", response_class=HTMLResponse)
-def new_medication(request: Request, member: MemberDep, services: ServicesDep) -> HTMLResponse:
+def new_medication(request: Request, member: MemberDep, services: ServicesDep) -> Response:
     if not member.can_edit:
         flash(request, "You have view-only access.", "error")
         return redirect("/medications")
@@ -62,7 +62,7 @@ def new_medication(request: Request, member: MemberDep, services: ServicesDep) -
 
 
 @router.get("/scan", response_class=HTMLResponse)
-def scan_form(request: Request, member: MemberDep, services: ServicesDep) -> HTMLResponse:
+def scan_form(request: Request, member: MemberDep, services: ServicesDep) -> Response:
     if not member.can_edit:
         flash(request, "You have view-only access.", "error")
         return redirect("/medications")

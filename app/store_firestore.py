@@ -40,7 +40,7 @@ class FirestoreStore:
         self._client.collection(collection).document(doc_id).delete()
 
     def list(self, collection: str) -> list[Document]:
-        return [snap.to_dict() for snap in self._client.collection(collection).stream()]
+        return [snap.to_dict() or {} for snap in self._client.collection(collection).stream()]
 
     def increment(self, collection: str, doc_id: str, field: str, amount: int = 1) -> int:
         ref = self._client.collection(collection).document(doc_id)
