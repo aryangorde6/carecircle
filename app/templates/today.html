@@ -21,19 +21,10 @@
     </button>
   {% endif %}
   {% if week.percent is not none %}
-    <p class="hint">Last 7 days: {{ week.percent }}% of doses taken ({{ week.taken }} of {{ week.expected }}).</p>
+    <p class="hint">Last 7 days: <span class="figure">{{ week.percent }}%</span> of doses taken (<span class="figure">{{ week.taken }}</span> of <span class="figure">{{ week.expected }}</span>).</p>
   {% endif %}
 </section>
 
-{% if low_meds %}
-<section class="card notice-card" aria-labelledby="low-title">
-  <h2 id="low-title">Running low</h2>
-  <ul class="plain-list">
-    {% for m in low_meds %}<li><strong>{{ m.name }}</strong>: about {{ m.days_left }} day{{ '' if m.days_left == 1 else 's' }} left</li>{% endfor %}
-  </ul>
-  <p class="hint">Buy more soon, then press Refilled on the <a href="/medications">Medicines</a> page.</p>
-</section>
-{% endif %}
 
 <section aria-labelledby="doses-title">
   <h2 id="doses-title">Medicines</h2>
@@ -80,6 +71,16 @@
     <p>{% if member.can_edit %}<a href="/medications/new">Add a medicine</a> or <a href="/medications/scan">scan a prescription</a> to get started.{% else %}Nothing scheduled.{% endif %}</p>
   {% endif %}
 </section>
+
+{% if low_meds %}
+<section class="card notice-card" aria-labelledby="low-title">
+  <h2 id="low-title">Running low</h2>
+  <ul class="plain-list">
+    {% for m in low_meds %}<li><strong>{{ m.name }}</strong>: balance <span class="figure">{{ m.supply }}</span> dose{{ '' if m.supply == 1 else 's' }}, about <span class="figure">{{ m.days_left }}</span> day{{ '' if m.days_left == 1 else 's' }} left</li>{% endfor %}
+  </ul>
+  <p class="hint">Buy more soon, then press Refilled on the <a href="/medications">Medicines</a> page.</p>
+</section>
+{% endif %}
 
 {% if voice_enabled %}
 <section class="card voice-card" id="voice" aria-labelledby="voice-title">

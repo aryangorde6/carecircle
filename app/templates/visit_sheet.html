@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Visit sheet{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <div class="page-head no-print">
-  <p><a href="/appointments"><span aria-hidden="true">←</span> Back to appointments</a></p>
+  <p><a href="/appointments">{{ icons.back() }} Back to appointments</a></p>
   <button type="button" class="btn btn-primary" data-print hidden>Print or save as PDF</button>
 </div>
 
@@ -28,8 +29,8 @@
           <tr>
             <th scope="row">{{ m.name }}</th>
             <td>{{ m.dosage or '–' }}{% if m.instructions %}<br><span class="hint">{{ m.instructions }}</span>{% endif %}</td>
-            <td>{{ m.times|join(', ') }}</td>
-            <td>{% if s and s.percent is not none %}{{ s.percent }}% <span class="hint">({{ s.taken }} of {{ s.expected }})</span>{% else %}–{% endif %}</td>
+            <td class="figure">{{ m.times|join(', ') }}</td>
+            <td>{% if s and s.percent is not none %}<span class="figure">{{ s.percent }}%</span> <span class="hint figure">({{ s.taken }} of {{ s.expected }})</span>{% else %}–{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -50,7 +51,7 @@
     {% if unwell %}
     <ul class="feeling-list">
       {% for c in unwell %}
-      <li><span class="hint">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
+      <li><span class="hint figure">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
       {% endfor %}
     </ul>
     {% endif %}

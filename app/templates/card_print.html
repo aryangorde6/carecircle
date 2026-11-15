@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Fridge card{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <div class="page-head no-print">
-  <p><a href="/circle#card"><span aria-hidden="true">←</span> Back to the circle</a></p>
+  <p><a href="/circle#card">{{ icons.back() }} Back to the circle</a></p>
   <button type="button" class="btn btn-primary" data-print hidden>Print or save as PDF</button>
 </div>
 

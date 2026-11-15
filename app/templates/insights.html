@@ -36,7 +36,7 @@
   {% if check_ins %}
   <ul class="feeling-list">
     {% for c in check_ins %}
-    <li><span class="hint">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
+    <li><span class="hint figure">{{ c.day.strftime('%a %d %b') }}</span><span><strong class="feeling-{{ c.feeling.value }}">{{ c.feeling.label }}</strong>{% if c.note %}: “{{ c.note }}”{% endif %}</span></li>
     {% endfor %}
   </ul>
   <p class="hint">From the daily check-in on the Today page. The weekly update below takes these into account.</p>
