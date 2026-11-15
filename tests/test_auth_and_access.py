@@ -186,3 +186,4 @@ def test_docs_hidden_in_production(store):
 def test_head_requests_supported_for_uptime_checks(client):
     assert client.head("/").status_code == 200
     assert client.head("/healthz").status_code == 200
+    assert client.get("/health").json() == {"status": "ok"}

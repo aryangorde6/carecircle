@@ -131,6 +131,9 @@ def favicon() -> RedirectResponse:
     return RedirectResponse("/static/favicon.svg", status_code=301)
 
 
+# Cloud Run reserves some paths ending in "z" (such as /healthz) at its front end,
+# so /health is the public health check; /healthz stays for local tooling.
+@router.api_route("/health", methods=["GET", "HEAD"], include_in_schema=False)
 @router.api_route("/healthz", methods=["GET", "HEAD"], include_in_schema=False)
 def healthz() -> dict[str, str]:
     return {"status": "ok"}

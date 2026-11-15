@@ -34,10 +34,10 @@ class Settings:
     # Storage: "memory" for local development and tests, "firestore" in production.
     store_backend: str = "memory"
     gcp_project: str = ""
-    gcp_location: str = "us-central1"
+    gcp_location: str = "global"
 
     # Gemini on Vertex AI. Disabled when no project is configured.
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
     ai_daily_call_cap: int = 300
     ai_session_call_cap: int = 15
 
@@ -80,8 +80,8 @@ def load_settings() -> Settings:
         secure_cookies=_env_bool("SECURE_COOKIES", is_prod),
         store_backend=os.environ.get("STORE_BACKEND", "firestore" if is_prod else "memory"),
         gcp_project=os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
-        gcp_location=os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"),
-        gemini_model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+        gcp_location=os.environ.get("GOOGLE_CLOUD_LOCATION", "global"),
+        gemini_model=os.environ.get("GEMINI_MODEL", "gemini-3.5-flash"),
         ai_daily_call_cap=_env_int("AI_DAILY_CALL_CAP", 300),
         ai_session_call_cap=_env_int("AI_SESSION_CALL_CAP", 15),
         email_backend=os.environ.get("EMAIL_BACKEND", "console"),

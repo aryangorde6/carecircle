@@ -32,7 +32,10 @@ class GeminiModel:
                 response_mime_type="application/json",
                 response_schema=list[ExtractedMedication],
                 temperature=0.1,
-                max_output_tokens=2048,
+                # Thinking tokens count towards the output limit; keep thinking
+                # low so the JSON answer is never cut short and replies stay fast.
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+                max_output_tokens=4096,
             ),
         )
         parsed = response.parsed
@@ -49,7 +52,8 @@ class GeminiModel:
                 response_mime_type="application/json",
                 response_schema=WeeklySummary,
                 temperature=0.4,
-                max_output_tokens=1024,
+                thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
+                max_output_tokens=2048,
             ),
         )
         parsed = response.parsed

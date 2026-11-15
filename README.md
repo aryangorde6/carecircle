@@ -4,7 +4,7 @@
 
 Most reminder apps nag one person. CareCircle treats medication as a team effort with the elder in charge: it reminds the elder first, tells caretakers only if a dose is really missed, brings in family only when it matters, and lets the elder decide who can see and change what.
 
-- **Live app:** _Cloud Run URL added after deploy_ (click **Try a demo circle** for a private circle with a week of sample data, no sign-up)
+- **Live app:** https://carecircle-641776536530.asia-south1.run.app (click **Try a demo circle** for a private circle with a week of sample data, no sign-up)
 - **Stack:** Python · FastAPI · Jinja2 · Cloud Firestore · Gemini on Vertex AI · Cloud Scheduler · Secret Manager · Cloud Run
 
 ---
@@ -144,19 +144,44 @@ Locally the app uses an in-memory store and logs emails instead of sending them.
 
 ## Deploy to Cloud Run
 
+The live app runs in `asia-south1` (Mumbai) with its own least-privilege service account.
+
 ```bash
 PROJECT=your-project-id REGION=asia-south1
+RUN_SA=carecircle-run@$PROJECT.iam.gserviceaccount.com
 gcloud services enable run.googleapis.com firestore.googleapis.com aiplatform.googleapis.com \
   cloudscheduler.googleapis.com secretmanager.googleapis.com cloudbuild.googleapis.com \
   artifactregistry.googleapis.com
-gcloud firestore databases create --location=$REGION
+gcloud firestore databases create --location=$REGION --type=firestore-native
 openssl rand -base64 48 | gcloud secrets create session-secret --data-file=-
+
+# The app's identity: Firestore, Vertex AI and this one secret, nothing else.
+gcloud iam service-accounts create carecircle-run
+gcloud projects add-iam-policy-binding $PROJECT --member=serviceAccount:$RUN_SA --role=roles/datastore.user
+gcloud projects add-iam-policy-binding $PROJECT --member=serviceAccount:$RUN_SA --role=roles/aiplatform.user
+gcloud secrets add-iam-policy-binding session-secret --member=serviceAccount:$RUN_SA \
+  --role=roles/secretmanager.secretAccessor
+
 gcloud run deploy carecircle --source . --region $REGION --allow-unauthenticated \
-  --set-env-vars APP_ENV=production,GOOGLE_CLOUD_PROJECT=$PROJECT \
+  --service-account $RUN_SA --min-instances 0 --max-instances 2 \
+  --set-env-vars APP_ENV=production,GOOGLE_CLOUD_PROJECT=$PROJECT,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=gemini-3.5-flash \
   --set-secrets SESSION_SECRET=session-secret:latest
 ```
 
-Then create a Cloud Scheduler job that POSTs to `/tasks/reminders` every 5 minutes with an OIDC token, and set `TASKS_AUDIENCE` and `TASKS_SERVICE_ACCOUNT` on the service. For real email, set `EMAIL_BACKEND=smtp`, `SMTP_USER`, and an `SMTP_PASSWORD` secret.
+Reminders: a Cloud Scheduler job calls the reminder endpoint every 5 minutes with a Google-signed OIDC token, which the app verifies (audience and service account).
+
+```bash
+URL=$(gcloud run services describe carecircle --region $REGION --format='value(status.url)')
+SCHED_SA=carecircle-scheduler@$PROJECT.iam.gserviceaccount.com
+gcloud iam service-accounts create carecircle-scheduler
+gcloud run services update carecircle --region $REGION \
+  --update-env-vars PUBLIC_BASE_URL=$URL,TASKS_AUDIENCE=$URL/tasks/reminders,TASKS_SERVICE_ACCOUNT=$SCHED_SA
+gcloud scheduler jobs create http carecircle-reminders --location=$REGION --schedule="*/5 * * * *" \
+  --uri=$URL/tasks/reminders --http-method=POST \
+  --oidc-service-account-email=$SCHED_SA --oidc-token-audience=$URL/tasks/reminders
+```
+
+For real email, set `EMAIL_BACKEND=smtp`, `SMTP_USER`, and an `SMTP_PASSWORD` secret. The health check is `/health`.
 
 | Variable | Purpose |
 |---|---|
