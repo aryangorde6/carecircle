@@ -5,9 +5,10 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -134,8 +135,9 @@ def create_app(
     async def _login_required(request: Request, exc: LoginRequired) -> RedirectResponse:
         return RedirectResponse("/", status_code=303)
 
-    @app.exception_handler(HTTPException)
-    async def _http_error(request: Request, exc: HTTPException) -> Response:
+    # Starlette's base class also covers unknown URLs (404) and wrong methods (405).
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_error(request: Request, exc: StarletteHTTPException) -> Response:
         if request.url.path.startswith("/tasks/"):
             return Response(status_code=exc.status_code)
         return TEMPLATES.TemplateResponse(

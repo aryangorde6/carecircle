@@ -167,7 +167,15 @@ def _save(
         flash(request, "Please enter the doctor's name and a valid date and time.", "error")
         target = f"/appointments/{appointment_id}/edit" if appointment_id else "/appointments/new"
         return redirect(target)
-    flash(request, "Appointment saved. Everyone in the circle will get reminders.", "success")
+    emailed = any(m.email and m.notify for m in services.care.list_members(circle.id))
+    flash(
+        request,
+        "Appointment saved. Everyone in the circle with an email address will get reminders."
+        if emailed
+        else "Appointment saved. Nobody in the circle has an email address yet, so no "
+        "reminder emails will go out. Add one on the Circle page.",
+        "success",
+    )
     return redirect("/appointments")
 
 
