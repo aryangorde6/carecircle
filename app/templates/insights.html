@@ -59,7 +59,7 @@
   {% else %}
     <p>Get a plain-language summary of the week for the family, with questions to ask the doctor.</p>
   {% endif %}
-  <div class="actions">
+  <div class="actions actions-end">
     {% if ai_enabled %}
     <form method="post" action="/insights/summary" class="summary-form">
       <input type="hidden" name="csrf" value="{{ csrf_token }}">

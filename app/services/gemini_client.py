@@ -12,6 +12,9 @@ from google.genai import types
 from app.models import ExtractedMedication
 from app.services.ai import PRESCRIPTION_PROMPT, SUMMARY_PROMPT, WeeklySummary
 
+# The model only returns data. It is given no tools and can never call any.
+NO_TOOLS = types.AutomaticFunctionCallingConfig(disable=True)
+
 
 class GeminiModel:
     """Implements :class:`app.services.ai.AiModel` with Gemini."""
@@ -36,6 +39,7 @@ class GeminiModel:
                 # low so the JSON answer is never cut short and replies stay fast.
                 thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
                 max_output_tokens=4096,
+                automatic_function_calling=NO_TOOLS,
             ),
         )
         parsed = response.parsed
@@ -58,6 +62,7 @@ class GeminiModel:
                 temperature=0.4,
                 thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL),
                 max_output_tokens=2048,
+                automatic_function_calling=NO_TOOLS,
             ),
         )
         parsed = response.parsed
