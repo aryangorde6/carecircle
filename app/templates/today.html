@@ -16,7 +16,7 @@
   {% else %}
     <p class="big" id="speak-text">{{ pending_count }} medicine{{ '' if pending_count == 1 else 's' }} left today.
       {% if next_dose %}{% if next_dose.scheduled_for < now %}Not taken yet: {{ next_dose.medication.name }} {{ next_dose.medication.dosage }}, due at {% else %}Next: {{ next_dose.medication.name }} {{ next_dose.medication.dosage }} at {% endif %}{{ next_dose.scheduled_for.astimezone(zone).strftime('%I:%M %p') }}{% if next_dose.medication.instructions %}, {{ next_dose.medication.instructions }}{% endif %}.{% endif %}</p>
-    <button type="button" class="btn btn-secondary" data-speak="#speak-text">
+    <button type="button" class="btn btn-secondary" data-speak="#speak-text"{% if speech_enabled %} data-speak-url="/speak" data-csrf="{{ csrf_token }}"{% endif %}>
       {{ icons.speaker() }} Read aloud
     </button>
   {% endif %}

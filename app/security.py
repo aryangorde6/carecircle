@@ -102,7 +102,8 @@ class RateLimiter:
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
-        "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; "
+        "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; "
+        "style-src 'self'; "
         "script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
     ),
     "X-Content-Type-Options": "nosniff",

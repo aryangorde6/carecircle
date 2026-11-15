@@ -20,6 +20,7 @@ from app.routes import (
     circle,
     insights,
     medications,
+    speech,
     tasks,
     today,
     voice,
@@ -29,6 +30,7 @@ from app.services.ai import AiBudget, AiModel, AiService
 from app.services.care import CareService
 from app.services.emailer import Emailer, build_emailer
 from app.services.reminders import ReminderService
+from app.services.speech import SpeechBudget, SpeechModel, SpeechService
 from app.store import DocumentStore, InMemoryStore
 from app.web import TEMPLATES, LoginRequired, Services
 
@@ -52,12 +54,21 @@ def _default_ai_model(settings: Settings) -> AiModel | None:
     return GeminiModel(settings.gcp_project, settings.gcp_location, settings.gemini_model)
 
 
+def _default_speech_model(settings: Settings) -> SpeechModel | None:
+    if not settings.ai_enabled:
+        return None
+    from app.services.speech import GoogleSpeech
+
+    return GoogleSpeech()
+
+
 def create_app(
     settings: Settings | None = None,
     *,
     store: DocumentStore | None = None,
     emailer: Emailer | None = None,
     ai_model: AiModel | None = None,
+    speech_model: SpeechModel | None = None,
     verify_task_token: Callable[[str], bool] | None = None,
 ) -> FastAPI:
     """Build the app. Tests pass fakes; production builds real Google clients."""
@@ -84,6 +95,11 @@ def create_app(
         ai_limiter=RateLimiter(max_events=settings.ai_session_call_cap, window_seconds=3600),
         public_limiter=RateLimiter(max_events=30, window_seconds=300),
         alert_limiter=RateLimiter(max_events=1, window_seconds=1800),
+        speech=SpeechService(
+            speech_model if speech_model is not None else _default_speech_model(settings),
+            SpeechBudget(store, settings.tts_daily_call_cap),
+        ),
+        speech_limiter=RateLimiter(max_events=40, window_seconds=600),
         verify_task_token=verify_task_token or tasks.build_task_verifier(settings),
     )
 
@@ -139,7 +155,8 @@ def create_app(
     app.mount(
         "/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static"
     )
-    for module in (auth, today, voice, medications, appointments, circle, card, insights, tasks):
+    routers = (auth, today, voice, speech, medications, appointments, circle, card, insights, tasks)
+    for module in routers:
         app.include_router(module.router)
     return app
 

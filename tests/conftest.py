@@ -69,6 +69,20 @@ def emailer() -> FakeEmailer:
     return FakeEmailer()
 
 
+@dataclass
+class FakeSpeech:
+    calls: list[tuple[str, str]] = field(default_factory=list)
+
+    def synthesize(self, text: str, language_code: str) -> bytes:
+        self.calls.append((text, language_code))
+        return b"ID3-fake-mp3"
+
+
+@pytest.fixture
+def fake_speech() -> FakeSpeech:
+    return FakeSpeech()
+
+
 @pytest.fixture
 def fake_ai() -> FakeAi:
     return FakeAi(
@@ -79,12 +93,13 @@ def fake_ai() -> FakeAi:
 
 
 @pytest.fixture
-def app(settings, store, emailer, fake_ai):
+def app(settings, store, emailer, fake_ai, fake_speech):
     return create_app(
         settings,
         store=store,
         emailer=emailer,
         ai_model=fake_ai,
+        speech_model=fake_speech,
         verify_task_token=lambda token: token == "good-token",
     )
 

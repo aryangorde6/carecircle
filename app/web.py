@@ -18,6 +18,7 @@ from app.security import RateLimiter, csrf_matches, new_csrf_token
 from app.services.ai import AiService
 from app.services.care import CareService, NotFound
 from app.services.reminders import ReminderService
+from app.services.speech import SpeechService
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
@@ -45,6 +46,8 @@ class Services:
     ai_limiter: RateLimiter
     public_limiter: RateLimiter  # per-IP limit on public pages such as the emergency card
     alert_limiter: RateLimiter  # at most one "card opened" email per circle per window
+    speech: SpeechService
+    speech_limiter: RateLimiter  # read-aloud requests per member
     verify_task_token: Callable[[str], bool]
 
 
@@ -122,6 +125,7 @@ def render(
             "circle": circle,
             "csrf_token": csrf_token(request),
             "messages": messages,
+            "speech_enabled": get_services(request).speech.enabled,
             **context,
         },
         status_code=status_code,

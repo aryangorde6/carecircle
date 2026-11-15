@@ -12,7 +12,7 @@
   {% endif %}
   {% if note.reply %}
   <p id="voice-reply" {% if note.language_code %}lang="{{ note.language_code }}"{% endif %}>{{ note.reply }}</p>
-  <button type="button" class="btn btn-ghost" data-speak="#voice-reply">{{ icons.speaker() }} Read aloud</button>
+  <button type="button" class="btn btn-ghost" data-speak="#voice-reply"{% if speech_enabled %} data-speak-url="/speak" data-csrf="{{ csrf_token }}"{% endif %}>{{ icons.speaker() }} Read aloud</button>
   {% endif %}
 </section>
 

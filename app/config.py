@@ -40,6 +40,7 @@ class Settings:
     gemini_model: str = "gemini-3.5-flash"
     ai_daily_call_cap: int = 300
     ai_session_call_cap: int = 15
+    tts_daily_call_cap: int = 500
 
     # Email: "console" logs a redacted line instead of sending; "smtp" sends.
     email_backend: str = "console"
@@ -84,6 +85,7 @@ def load_settings() -> Settings:
         gemini_model=os.environ.get("GEMINI_MODEL", "gemini-3.5-flash"),
         ai_daily_call_cap=_env_int("AI_DAILY_CALL_CAP", 300),
         ai_session_call_cap=_env_int("AI_SESSION_CALL_CAP", 15),
+        tts_daily_call_cap=_env_int("TTS_DAILY_CALL_CAP", 500),
         email_backend=os.environ.get("EMAIL_BACKEND", "console"),
         smtp_host=os.environ.get("SMTP_HOST", "smtp.gmail.com"),
         smtp_port=_env_int("SMTP_PORT", 587),
