@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit appointment' if appt else 'Add an appointment' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Edit appointment' if appt else 'Add an appointment' }}</h1>
+<form method="post" action="{{ '/appointments/' ~ appt.id if appt else '/appointments' }}" class="card stack form-narrow">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="doctor">Doctor or clinic</label>
+    <input id="doctor" name="doctor" required maxlength="80" value="{{ appt.doctor if appt else '' }}">
+  </div>
+  <div class="field">
+    <label for="starts_at">Date and time <span class="optional">({{ circle.timezone.replace('_', ' ') }})</span></label>
+    <input id="starts_at" name="starts_at" type="datetime-local" required value="{{ local_value }}">
+  </div>
+  <div class="field">
+    <label for="purpose">Reason <span class="optional">(optional)</span></label>
+    <input id="purpose" name="purpose" maxlength="120" placeholder="e.g. diabetes check-up" value="{{ appt.purpose if appt else '' }}">
+  </div>
+  <div class="field">
+    <label for="location">Place <span class="optional">(optional)</span></label>
+    <input id="location" name="location" maxlength="120" value="{{ appt.location if appt else '' }}">
+  </div>
+  <div class="field">
+    <label for="notes">Notes <span class="optional">(optional)</span></label>
+    <textarea id="notes" name="notes" maxlength="500" rows="3">{{ appt.notes if appt else '' }}</textarea>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-ghost" href="/appointments">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Insights{% endblock %}
+{% block content %}
+<h1>How it's going</h1>
+
+<div class="grid-2">
+  <section class="card stat" aria-labelledby="w-title">
+    <h2 id="w-title">Last 7 days</h2>
+    <p class="stat-number">{{ week.percent if week.percent is not none else '–' }}{% if week.percent is not none %}<span class="stat-unit">%</span>{% endif %}</p>
+    <p>{{ week.taken }} taken · {{ week.skipped }} skipped · {{ week.missed }} missed</p>
+  </section>
+  <section class="card stat" aria-labelledby="m-title">
+    <h2 id="m-title">Last 30 days</h2>
+    <p class="stat-number">{{ month.percent if month.percent is not none else '–' }}{% if month.percent is not none %}<span class="stat-unit">%</span>{% endif %}</p>
+    <p>{{ month.taken }} taken · {{ month.skipped }} skipped · {{ month.missed }} missed</p>
+  </section>
+</div>
+
+{% if week_per_med %}
+<section aria-labelledby="per-title">
+  <h2 id="per-title">Each medicine, last 7 days</h2>
+  <ul class="bar-list">
+    {% for name, s in week_per_med %}
+    <li>
+      <span class="bar-label">{{ name }}</span>
+      <meter min="0" max="100" low="60" high="85" optimum="100" value="{{ s.percent or 0 }}">{{ s.percent or 0 }}%</meter>
+      <span class="bar-value">{{ s.percent if s.percent is not none else '–' }}% ({{ s.taken }}/{{ s.expected }})</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card" id="summary" aria-labelledby="s-title">
+  <h2 id="s-title">Weekly family update</h2>
+  {% if summary %}
+    <p class="hint">Written by Gemini from this week's records{% if summary_at %} on {{ summary_at[:10] }}{% endif %}. It is not medical advice.</p>
+    <p class="summary-text">{{ summary.summary }}</p>
+    {% if summary.doctor_questions %}
+    <h3>Questions for the next doctor's visit</h3>
+    <ul>{% for q in summary.doctor_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% else %}
+    <p>Get a plain-language summary of the week for the family, with questions to ask the doctor.</p>
+  {% endif %}
+  <div class="actions">
+    {% if ai_enabled %}
+    <form method="post" action="/insights/summary">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-primary" data-busy-text="Writing the summary…">{{ 'Write a new summary' if summary else 'Write this week\'s summary' }}</button>
+    </form>
+    {% else %}
+    <p class="hint">AI summaries are not switched on for this server.</p>
+    {% endif %}
+    {% if summary and member.can_edit %}
+    <form method="post" action="/insights/summary/email">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <button type="submit" class="btn btn-secondary">Email it to the circle</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

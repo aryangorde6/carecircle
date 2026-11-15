@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Medicines{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Medicines</h1>
+  {% if member.can_edit %}
+  <div class="actions">
+    <a class="btn btn-primary" href="/medications/new">Add a medicine</a>
+    <a class="btn btn-secondary" href="/medications/scan"><span aria-hidden="true">📷</span> Scan a prescription</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if active %}
+<ul class="card-list">
+  {% for m in active %}
+  <li class="card">
+    <h2 class="card-title">{{ m.name }} {% if m.dosage %}<span class="dose-dosage">{{ m.dosage }}</span>{% endif %}</h2>
+    <p>Times: {{ m.times|join(', ') }}</p>
+    {% if m.instructions %}<p class="hint">{{ m.instructions }}</p>{% endif %}
+    <p class="hint">From {{ m.start_date.strftime('%d %b %Y') }}{% if m.end_date %} to {{ m.end_date.strftime('%d %b %Y') }}{% endif %}</p>
+    {% if member.can_edit %}
+    <div class="actions">
+      <a class="btn btn-ghost" href="/medications/{{ m.id }}/edit">Edit<span class="visually-hidden"> {{ m.name }}</span></a>
+      <form method="post" action="/medications/{{ m.id }}/stop">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-ghost">Stop<span class="visually-hidden"> {{ m.name }}</span></button>
+      </form>
+    </div>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No medicines yet.</p>
+{% endif %}
+
+{% if stopped %}
+<details class="stopped">
+  <summary>Stopped medicines ({{ stopped|length }})</summary>
+  <ul class="plain-list">
+    {% for m in stopped %}<li>{{ m.name }} {{ m.dosage }}</li>{% endfor %}
+  </ul>
+</details>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CareCircle helps elders, caretakers and family manage medicines and doctor appointments together.">
+  <title>{% block title %}CareCircle{% endblock %} · CareCircle</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="/" aria-label="CareCircle home">
+        <span class="brand-mark" aria-hidden="true">◎</span> CareCircle
+      </a>
+      <div class="text-size" role="group" aria-label="Text size">
+        <button type="button" class="btn-ghost" data-text-size="normal" aria-pressed="true">A</button>
+        <button type="button" class="btn-ghost text-lg" data-text-size="large" aria-pressed="false">A+</button>
+      </div>
+    </div>
+    {% if member %}
+    <nav class="wrap main-nav" aria-label="Main">
+      <ul>
+        {% set path = request.url.path %}
+        <li><a href="/today" {% if path == '/today' %}aria-current="page"{% endif %}>Today</a></li>
+        <li><a href="/medications" {% if path.startswith('/medications') %}aria-current="page"{% endif %}>Medicines</a></li>
+        <li><a href="/appointments" {% if path.startswith('/appointments') %}aria-current="page"{% endif %}>Appointments</a></li>
+        <li><a href="/insights" {% if path.startswith('/insights') %}aria-current="page"{% endif %}>Insights</a></li>
+        <li><a href="/circle" {% if path.startswith('/circle') %}aria-current="page"{% endif %}>Circle</a></li>
+      </ul>
+      <form method="post" action="/logout" class="logout">
+        <input type="hidden" name="csrf" value="{{ csrf_token }}">
+        <span class="who">{{ member.name }} · {{ member.role.value|capitalize }}{% if not member.can_edit %} (view only){% endif %}</span>
+        <button type="submit" class="btn-ghost">Sign out</button>
+      </form>
+    </nav>
+    {% endif %}
+  </header>
+
+  <main id="main" class="wrap" tabindex="-1">
+    <div class="messages" role="status" aria-live="polite">
+      {% for m in messages %}
+        <p class="flash flash-{{ m.kind }}">{{ m.message }}</p>
+      {% endfor %}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>CareCircle supports, but never replaces, advice from a doctor or pharmacist.</p>
+  </footer>
+</body>
+</html>

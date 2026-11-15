@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Today{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Today for {{ circle.elder_name }}</h1>
+  <p class="hint">{{ today.strftime('%A %d %B') }}</p>
+</div>
+
+<section class="card summary-card" aria-labelledby="status-title">
+  <h2 id="status-title" class="visually-hidden">Summary</h2>
+  {% if not doses %}
+    <p class="big">No medicines scheduled today.</p>
+  {% elif pending_count == 0 %}
+    <p class="big"><span aria-hidden="true">✔</span> All of today's medicines are done. Well done!</p>
+  {% else %}
+    <p class="big" id="speak-text">{{ pending_count }} medicine{{ '' if pending_count == 1 else 's' }} left today.
+      {% if next_dose %}Next: {{ next_dose.medication.name }} {{ next_dose.medication.dosage }} at {{ next_dose.scheduled_for.astimezone(zone).strftime('%I:%M %p') }}{% if next_dose.medication.instructions %}, {{ next_dose.medication.instructions }}{% endif %}.{% endif %}</p>
+    <button type="button" class="btn btn-secondary" data-speak="#speak-text">
+      <span aria-hidden="true">🔊</span> Read aloud
+    </button>
+  {% endif %}
+  {% if week.percent is not none %}
+    <p class="hint">Last 7 days: {{ week.percent }}% of doses taken ({{ week.taken }} of {{ week.expected }}).</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="doses-title">
+  <h2 id="doses-title">Medicines</h2>
+  {% if doses %}
+  <ol class="dose-list">
+    {% for d in doses %}
+    {% set local = d.scheduled_for.astimezone(zone) %}
+    {% set late = d.status is none and d.scheduled_for < now %}
+    <li class="dose {% if d.status %}dose-{{ d.status.value }}{% elif late %}dose-late{% endif %}">
+      <div class="dose-time">{{ local.strftime('%I:%M %p') }}</div>
+      <div class="dose-info">
+        <p class="dose-name">{{ d.medication.name }} <span class="dose-dosage">{{ d.medication.dosage }}</span></p>
+        {% if d.medication.instructions %}<p class="hint">{{ d.medication.instructions }}</p>{% endif %}
+        <p class="dose-status">
+          {% if d.status and d.status.value == 'taken' %}<span aria-hidden="true">✔</span> Taken{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
+          {% elif d.status %}<span aria-hidden="true">–</span> Skipped{% if d.log.recorded_by %}, marked by {{ d.log.recorded_by }}{% endif %}
+          {% elif late %}<span aria-hidden="true">!</span> Not marked yet
+          {% else %}Due later{% endif %}
+        </p>
+      </div>
+      {% if member.can_edit and d.status is none %}
+      <div class="dose-actions">
+        <form method="post" action="/doses">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <input type="hidden" name="medication_id" value="{{ d.medication.id }}">
+          <input type="hidden" name="scheduled_for" value="{{ d.scheduled_for.isoformat() }}">
+          <button type="submit" name="status" value="taken" class="btn btn-primary btn-big">
+            I took it<span class="visually-hidden">: {{ d.medication.name }} at {{ local.strftime('%I:%M %p') }}</span>
+          </button>
+          <button type="submit" name="status" value="skipped" class="btn btn-ghost">
+            Skip<span class="visually-hidden"> {{ d.medication.name }} at {{ local.strftime('%I:%M %p') }}</span>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+    <p>{% if member.can_edit %}<a href="/medications/new">Add a medicine</a> or <a href="/medications/scan">scan a prescription</a> to get started.{% else %}Nothing scheduled.{% endif %}</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="appts-title">
+  <h2 id="appts-title">Coming up</h2>
+  {% if appointments %}
+  <ul class="plain-list">
+    {% for a in appointments %}
+      <li><strong>{{ a.doctor }}</strong>, {{ a.starts_at.astimezone(zone).strftime('%a %d %b, %I:%M %p') }}{% if a.purpose %}: {{ a.purpose }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p>No upcoming appointments. <a href="/appointments">See appointments</a></p>
+  {% endif %}
+</section>
+{% endblock %}

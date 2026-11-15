@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<section class="hero" aria-labelledby="hero-title">
+  <h1 id="hero-title">Medicines and doctor visits, managed together.</h1>
+  <p class="lead">One shared, passcode-protected care profile for an elder, their caretakers and family.
+    Gentle reminders first, then the family is told only if a dose is really missed.
+    The elder decides who can see and change what.</p>
+</section>
+
+<div class="grid-2">
+  <section class="card" aria-labelledby="login-title">
+    <h2 id="login-title">Open a care circle</h2>
+    <form method="post" action="/login" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="circle_code">Circle code</label>
+        <input id="circle_code" name="circle_code" required autocomplete="username"
+               autocapitalize="characters" spellcheck="false" maxlength="32" aria-describedby="code-help">
+        <p id="code-help" class="hint">8 letters and numbers, for example K7QM2XPA.</p>
+      </div>
+      <div class="field">
+        <label for="login_passcode">Your passcode</label>
+        <input id="login_passcode" name="passcode" type="password" required
+               autocomplete="current-password" inputmode="text" maxlength="64">
+      </div>
+      <button type="submit" class="btn btn-primary">Open</button>
+    </form>
+  </section>
+
+  <section class="card" id="create" aria-labelledby="create-title">
+    <h2 id="create-title">Start a new circle</h2>
+    <p class="hint">The elder owns the circle and invites caretakers and family afterwards.</p>
+    <form method="post" action="/circles" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="elder_name">Elder's name</label>
+        <input id="elder_name" name="elder_name" required maxlength="80" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="create_email">Elder's email <span class="optional">(optional, for reminders)</span></label>
+        <input id="create_email" name="email" type="email" maxlength="254" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="timezone">Time zone</label>
+        <select id="timezone" name="timezone">
+          {% for tz in timezones %}<option value="{{ tz }}">{{ tz.replace('_', ' ') }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="create_passcode">Elder's passcode</label>
+        <input id="create_passcode" name="passcode" type="password" required minlength="6" maxlength="64"
+               autocomplete="new-password" aria-describedby="pass-help">
+        <p id="pass-help" class="hint">At least 6 characters. Each person gets their own passcode.</p>
+      </div>
+      <div class="field">
+        <label for="passcode_confirm">Type the passcode again</label>
+        <input id="passcode_confirm" name="passcode_confirm" type="password" required minlength="6"
+               maxlength="64" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary">Create circle</button>
+    </form>
+  </section>
+</div>
+
+<section class="features" aria-labelledby="features-title">
+  <h2 id="features-title">What makes it different</h2>
+  <ul class="feature-list">
+    <li><strong>Photo to schedule.</strong> Snap a prescription; Gemini drafts the medicine list for you to check.</li>
+    <li><strong>Escalating reminders.</strong> The elder first, caretakers after 30 minutes, family after an hour.</li>
+    <li><strong>The elder is in charge.</strong> They choose who can only view and who can edit.</li>
+    <li><strong>Weekly family update.</strong> A plain-language summary plus questions for the next doctor's visit.</li>
+  </ul>
+</section>
+{% endblock %}

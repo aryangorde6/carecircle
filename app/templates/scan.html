@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Scan a prescription{% endblock %}
+{% block content %}
+<h1>Scan a prescription</h1>
+{% if ai_enabled %}
+<p class="lead">Take a clear photo of the prescription or medicine label. Gemini reads it and drafts the
+  schedule. Nothing is saved until you check and confirm each medicine.</p>
+<form method="post" action="/medications/scan" enctype="multipart/form-data" class="card stack form-narrow">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="photo">Prescription photo</label>
+    <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"
+           required aria-describedby="photo-help">
+    <p id="photo-help" class="hint">JPEG, PNG or WebP, up to 5 MB. The photo is read once and not stored.</p>
+  </div>
+  <button type="submit" class="btn btn-primary" data-busy-text="Reading the photo…">Read prescription</button>
+</form>
+{% else %}
+<p>The AI reader is not switched on for this server. <a href="/medications/new">Add the medicine by hand</a>.</p>
+{% endif %}
+{% endblock %}

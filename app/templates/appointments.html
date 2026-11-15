@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Appointments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Appointments</h1>
+  {% if member.can_edit %}<a class="btn btn-primary" href="/appointments/new">Add an appointment</a>{% endif %}
+</div>
+<p class="hint">Everyone in the circle with an email gets a reminder 24 hours and 2 hours before.</p>
+
+<section aria-labelledby="up-title">
+  <h2 id="up-title">Upcoming</h2>
+  {% if upcoming %}
+  <ul class="card-list">
+    {% for a in upcoming %}
+    <li class="card">
+      <h3 class="card-title">{{ a.doctor }}</h3>
+      <p><strong>{{ a.starts_at.astimezone(zone).strftime('%A %d %B, %I:%M %p') }}</strong></p>
+      {% if a.purpose %}<p>{{ a.purpose }}</p>{% endif %}
+      {% if a.location %}<p class="hint">{{ a.location }}</p>{% endif %}
+      {% if a.notes %}<p class="hint">Notes: {{ a.notes }}</p>{% endif %}
+      <div class="actions">
+        <a class="btn btn-secondary" href="{{ calendar_url(a) }}" target="_blank" rel="noopener noreferrer">
+          Add to Google Calendar<span class="visually-hidden"> (opens in a new tab)</span>
+        </a>
+        {% if member.can_edit %}
+        <a class="btn btn-ghost" href="/appointments/{{ a.id }}/edit">Edit<span class="visually-hidden"> appointment with {{ a.doctor }}</span></a>
+        <form method="post" action="/appointments/{{ a.id }}/delete">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}">
+          <button type="submit" class="btn btn-ghost">Remove<span class="visually-hidden"> appointment with {{ a.doctor }}</span></button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No upcoming appointments.</p>
+  {% endif %}
+</section>
+
+{% if past %}
+<section aria-labelledby="past-title">
+  <h2 id="past-title">Recent</h2>
+  <ul class="plain-list">
+    {% for a in past %}<li>{{ a.doctor }}, {{ a.starts_at.astimezone(zone).strftime('%d %b %Y') }}{% if a.purpose %}: {{ a.purpose }}{% endif %}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

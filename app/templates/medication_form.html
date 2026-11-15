@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit medicine' if med else 'Add a medicine' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Edit ' ~ med.name if med else 'Add a medicine' }}</h1>
+<form method="post" action="{{ '/medications/' ~ med.id if med else '/medications' }}" class="card stack form-narrow">
+  <input type="hidden" name="csrf" value="{{ csrf_token }}">
+  <div class="field">
+    <label for="name">Medicine name</label>
+    <input id="name" name="name" required maxlength="80" value="{{ med.name if med else '' }}">
+  </div>
+  <div class="field">
+    <label for="dosage">Dose <span class="optional">(optional)</span></label>
+    <input id="dosage" name="dosage" maxlength="60" placeholder="e.g. 500 mg, 1 tablet" value="{{ med.dosage if med else '' }}">
+  </div>
+  <fieldset class="field">
+    <legend>Times each day</legend>
+    {% set times = med.times if med else ['09:00'] %}
+    <div class="times">
+      {% for i in range(4) %}
+      <label class="time-field">
+        <span class="visually-hidden">Dose time {{ i + 1 }}</span>
+        <input type="time" name="times" value="{{ times[i] if i < times|length else '' }}" {% if i == 0 %}required{% endif %}>
+      </label>
+      {% endfor %}
+    </div>
+    <p class="hint">Fill one box per dose. Leave extra boxes empty.</p>
+  </fieldset>
+  <div class="field">
+    <label for="instructions">Instructions <span class="optional">(optional)</span></label>
+    <input id="instructions" name="instructions" maxlength="200" placeholder="e.g. after food" value="{{ med.instructions if med else '' }}">
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="start_date">Start date</label>
+      <input id="start_date" name="start_date" type="date" value="{{ med.start_date.isoformat() if med else today.isoformat() }}">
+    </div>
+    <div class="field">
+      <label for="end_date">End date <span class="optional">(optional)</span></label>
+      <input id="end_date" name="end_date" type="date" value="{{ med.end_date.isoformat() if med and med.end_date else '' }}">
+    </div>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-ghost" href="/medications">Cancel</a>
+  </div>
+</form>
+{% endblock %}

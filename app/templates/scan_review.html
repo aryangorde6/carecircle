@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Check the medicines{% endblock %}
+{% block content %}
+<h1>Check what Gemini found</h1>
+{% if found %}
+<p class="lead">AI can make mistakes. Compare each medicine with the prescription, fix anything wrong,
+  then add it. Ask a pharmacist if you are unsure.</p>
+<ol class="card-list">
+  {% for m in found %}
+  <li class="card">
+    <form method="post" action="/medications" class="stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="name-{{ loop.index }}">Medicine name</label>
+        <input id="name-{{ loop.index }}" name="name" required maxlength="80" value="{{ m.name }}">
+      </div>
+      <div class="field">
+        <label for="dosage-{{ loop.index }}">Dose</label>
+        <input id="dosage-{{ loop.index }}" name="dosage" maxlength="60" value="{{ m.dosage }}">
+      </div>
+      <fieldset class="field">
+        <legend>Times each day</legend>
+        <div class="times">
+          {% for i in range(4) %}
+          <label class="time-field">
+            <span class="visually-hidden">Dose time {{ i + 1 }} for {{ m.name }}</span>
+            <input type="time" name="times" value="{{ m.times[i] if i < m.times|length else '' }}" {% if i == 0 %}required{% endif %}>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div class="field">
+        <label for="instr-{{ loop.index }}">Instructions</label>
+        <input id="instr-{{ loop.index }}" name="instructions" maxlength="200" value="{{ m.instructions }}">
+      </div>
+      <input type="hidden" name="start_date" value="{{ today.isoformat() }}">
+      <button type="submit" class="btn btn-primary">Add {{ m.name }}</button>
+    </form>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p class="lead">No medicines could be read from that photo. Try a sharper photo in good light, or
+  <a href="/medications/new">add the medicine by hand</a>.</p>
+{% endif %}
+<p><a href="/medications">Back to medicines</a></p>
+{% endblock %}

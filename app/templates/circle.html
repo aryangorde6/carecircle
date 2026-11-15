@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Care circle{% endblock %}
+{% block content %}
+<h1>{{ circle.elder_name }}'s care circle</h1>
+
+<section class="card code-card" aria-labelledby="code-title">
+  <h2 id="code-title">Circle code</h2>
+  <p class="circle-code"><span aria-hidden="true">{{ circle.id }}</span><span class="visually-hidden">{{ circle.id|list|join(' ') }}</span></p>
+  {% if new_circle %}
+  <p class="flash flash-success">Your circle is ready. Write this code down: everyone needs it, plus their own passcode, to open the circle.</p>
+  {% else %}
+  <p class="hint">Share this code with people you add. Each person also has their own passcode.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="people-title">
+  <h2 id="people-title">People</h2>
+  <div class="table-wrap">
+  <table>
+    <caption class="visually-hidden">People in this circle and what they can do</caption>
+    <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Can</th><th scope="col">Email reminders</th>{% if member.is_elder %}<th scope="col">Change</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for p in members %}
+      <tr>
+        <th scope="row">{{ p.name }}{% if p.id == member.id %} (you){% endif %}</th>
+        <td>{{ p.role.value|capitalize }}</td>
+        <td>{{ 'View and edit' if p.can_edit else 'View only' }}</td>
+        <td>{{ 'Yes' if p.email else 'No email' }}</td>
+        {% if member.is_elder %}
+        <td>
+          {% if not p.is_elder %}
+          <div class="actions">
+            <form method="post" action="/circle/members/{{ p.id }}/access">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <input type="hidden" name="access" value="{{ 'view' if p.can_edit else 'edit' }}">
+              <button type="submit" class="btn btn-ghost">{{ 'Make view only' if p.can_edit else 'Allow editing' }}<span class="visually-hidden"> for {{ p.name }}</span></button>
+            </form>
+            <form method="post" action="/circle/members/{{ p.id }}/remove">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-ghost btn-danger">Remove<span class="visually-hidden"> {{ p.name }}</span></button>
+            </form>
+          </div>
+          {% else %}Owner{% endif %}
+        </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if member.is_elder %}
+<section class="card" aria-labelledby="add-title">
+  <h2 id="add-title">Add someone</h2>
+  <p class="hint">You decide who joins and what they can do. You can change it at any time.</p>
+  <form method="post" action="/circle/members" class="stack form-narrow">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="m-name">Name</label>
+      <input id="m-name" name="name" required maxlength="80">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="m-role">Role</label>
+        <select id="m-role" name="role">
+          <option value="caretaker">Caretaker</option>
+          <option value="family">Family</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="m-access">Can</label>
+        <select id="m-access" name="access">
+          <option value="view">View only</option>
+          <option value="edit">View and edit</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="m-email">Email <span class="optional">(for reminders)</span></label>
+      <input id="m-email" name="email" type="email" maxlength="254" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="m-pass">Their passcode</label>
+      <input id="m-pass" name="passcode" type="password" required minlength="6" maxlength="64" autocomplete="new-password" aria-describedby="m-pass-help">
+      <p id="m-pass-help" class="hint">At least 6 characters, different from everyone else's.</p>
+    </div>
+    <button type="submit" class="btn btn-primary">Add to circle</button>
+  </form>
+</section>
+{% else %}
+<p class="hint">Only {{ circle.elder_name }} can add people or change what they can do.</p>
+{% endif %}
+{% endblock %}
