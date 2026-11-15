@@ -107,6 +107,11 @@ def logout(request: Request, _csrf: CsrfDep) -> RedirectResponse:
     return redirect("/")
 
 
+@router.get("/favicon.ico", include_in_schema=False)
+def favicon() -> RedirectResponse:
+    return RedirectResponse("/static/favicon.svg", status_code=301)
+
+
 @router.get("/healthz", include_in_schema=False)
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
