@@ -4,7 +4,7 @@
 
 Most reminder apps nag one person. CareCircle treats medication as a team effort with the elder in charge: it reminds the elder first, tells caretakers only if a dose is really missed, brings in family only when it matters, and lets the elder decide who can see and change what.
 
-- **Live app:** _Cloud Run URL added after deploy_
+- **Live app:** _Cloud Run URL added after deploy_ (click **Try a demo circle** for a private circle with a week of sample data, no sign-up)
 - **Stack:** Python · FastAPI · Jinja2 · Cloud Firestore · Gemini on Vertex AI · Cloud Scheduler · Secret Manager · Cloud Run
 
 ---
@@ -45,7 +45,10 @@ Photograph a prescription or medicine label. Gemini reads it with a **structured
 ### 4. The elder controls access
 The elder adds caretakers and family, chooses *view only* or *view and edit* for each, and can change or revoke it at any time. Permissions are re-read from the database on every request, so a removed person loses access immediately, even mid-session.
 
-### 5. Weekly family update (Gemini)
+### 5. One-click demo
+**Try a demo circle** creates a fresh, private circle with an elder, a caretaker and a family member, three medicines, a week of realistic history (including a pattern of missed evening doses) and two upcoming appointments. The circle page lists demo passcodes so you can sign in as each role and see how access changes. Add your own email under *Your reminders* and press **Send me a test email** to see delivery working.
+
+### 6. Weekly family update (Gemini)
 From the week's adherence data, Gemini writes a short, warm, plain-language summary and 3–5 questions to ask at the next doctor's visit. An editor can email it to the whole circle. It never gives medical advice or suggests dose changes.
 
 ## Architecture
@@ -123,7 +126,7 @@ Server-rendered pages with one small CSS file and one small script, gzip compres
 
 ```bash
 uv sync
-uv run pytest          # 38 tests, ~88% coverage
+uv run pytest          # 44 tests, ~85% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```
