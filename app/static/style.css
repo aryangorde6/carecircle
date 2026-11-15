@@ -18,6 +18,8 @@
 }
 
 html[data-text-size="large"] { --base: 1.375rem; }
+/* Components set display, so make the hidden attribute always win. */
+[hidden] { display: none !important; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
