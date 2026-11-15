@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Emergency card{% endblock %}
+{% block content %}
+<article class="emergency" aria-labelledby="em-title">
+  <p class="eyebrow">Emergency medical card</p>
+  <h1 id="em-title">{{ card.elder_name }}</h1>
+  {% if card.demo %}<p class="hint">Sample person from a CareCircle demo. Not a real patient.</p>{% endif %}
+  <p><a class="btn btn-emergency" href="tel:112">Call 112, emergency services</a></p>
+
+  <dl class="em-facts">
+    <div class="em-allergy"><dt>Allergies</dt><dd>{{ card.allergies or 'None recorded' }}</dd></div>
+    <div><dt>Blood group</dt><dd>{{ card.blood_group or 'Not recorded' }}</dd></div>
+    <div><dt>Health conditions</dt><dd>{{ card.conditions or 'None recorded' }}</dd></div>
+  </dl>
+
+  <section aria-labelledby="em-meds">
+    <h2 id="em-meds">Medicines taken now</h2>
+    {% if meds %}
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">Current medicines and when they are taken</caption>
+        <thead><tr><th scope="col">Medicine</th><th scope="col">Dose</th><th scope="col">When</th></tr></thead>
+        <tbody>
+          {% for m in meds %}
+          <tr>
+            <th scope="row">{{ m.name }}</th>
+            <td>{{ m.dosage or '–' }}{% if m.instructions %}<br><span class="hint">{{ m.instructions }}</span>{% endif %}</td>
+            <td>{{ m.times|join(', ') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>No medicines recorded.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="em-contacts">
+    <h2 id="em-contacts">Emergency contacts</h2>
+    {% if contact_lines %}
+    <ul class="em-contacts">{% for line in contact_lines %}<li>{{ line }}</li>{% endfor %}</ul>
+    {% else %}
+    <p>None recorded.</p>
+    {% endif %}
+  </section>
+
+  <p class="hint">Kept up to date by {{ card.elder_name }}'s care circle in CareCircle. The circle is told each time this card is opened.</p>
+</article>
+{% endblock %}

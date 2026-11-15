@@ -13,7 +13,16 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import Settings, load_settings
 from app.logging_config import configure_logging
-from app.routes import appointments, auth, circle, insights, medications, tasks, today
+from app.routes import (
+    appointments,
+    auth,
+    card,
+    circle,
+    insights,
+    medications,
+    tasks,
+    today,
+)
 from app.security import SECURITY_HEADERS, RateLimiter
 from app.services.ai import AiBudget, AiModel, AiService
 from app.services.care import CareService
@@ -72,6 +81,8 @@ def create_app(
         ),
         login_limiter=RateLimiter(max_events=8, window_seconds=300),
         ai_limiter=RateLimiter(max_events=settings.ai_session_call_cap, window_seconds=3600),
+        public_limiter=RateLimiter(max_events=30, window_seconds=300),
+        alert_limiter=RateLimiter(max_events=1, window_seconds=1800),
         verify_task_token=verify_task_token or tasks.build_task_verifier(settings),
     )
 
@@ -127,7 +138,7 @@ def create_app(
     app.mount(
         "/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static"
     )
-    for module in (auth, today, medications, appointments, circle, insights, tasks):
+    for module in (auth, today, medications, appointments, circle, card, insights, tasks):
         app.include_router(module.router)
     return app
 

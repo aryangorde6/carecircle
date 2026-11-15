@@ -7,6 +7,7 @@ circle can never reach another circle's data.
 
 from __future__ import annotations
 
+import secrets
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
@@ -35,6 +36,9 @@ from app.security import (
 from app.store import DocumentStore
 
 CIRCLES = "circles"
+# Public emergency-card links: card id -> circle id, plus when it was last opened.
+EMERGENCY_CARDS = "emergency_cards"
+CARD_OPENS_KEPT = 20
 
 
 class PermissionDenied(Exception):
@@ -152,6 +156,87 @@ class CareService:
         if data is None:
             raise NotFound("circle")
         return Circle.model_validate(data)
+
+    def save_circle(self, circle: Circle) -> None:
+        self.store.put(CIRCLES, circle.id, circle.model_dump(mode="json"))
+
+    # ----- emergency card --------------------------------------------------
+
+    def update_health_info(
+        self,
+        actor: Member,
+        *,
+        blood_group: str,
+        allergies: str,
+        conditions: str,
+        emergency_contacts: str,
+    ) -> Circle:
+        """Edit what the emergency card shows. The elder and editors may do this."""
+        self._require_edit(actor)
+        circle = self.get_circle(actor.circle_id)
+        updated = Circle.model_validate(
+            {
+                **circle.model_dump(),
+                "blood_group": blood_group,
+                "allergies": allergies.strip(),
+                "conditions": conditions.strip(),
+                "emergency_contacts": emergency_contacts.strip(),
+            }
+        )
+        self.save_circle(updated)
+        return updated
+
+    def enable_card(self, actor: Member, now: datetime | None = None) -> Circle:
+        """Turn the public emergency card on, or replace its link. Only the elder may."""
+        if not actor.is_elder:
+            raise PermissionDenied("Only the elder can turn the emergency card on.")
+        circle = self.get_circle(actor.circle_id)
+        if circle.card_id:
+            self.store.delete(EMERGENCY_CARDS, circle.card_id)
+        circle.card_id = secrets.token_urlsafe(16)
+        self.store.put(
+            EMERGENCY_CARDS,
+            circle.card_id,
+            {
+                "circle_id": circle.id,
+                "created_at": (now or datetime.now(UTC)).isoformat(),
+                "opens": [],
+            },
+        )
+        self.save_circle(circle)
+        return circle
+
+    def disable_card(self, actor: Member) -> Circle:
+        """Turn the emergency card off; its link and QR code stop working at once."""
+        if not actor.is_elder:
+            raise PermissionDenied("Only the elder can turn the emergency card off.")
+        circle = self.get_circle(actor.circle_id)
+        if circle.card_id:
+            self.store.delete(EMERGENCY_CARDS, circle.card_id)
+        circle.card_id = None
+        self.save_circle(circle)
+        return circle
+
+    def card_opens(self, circle: Circle) -> list[datetime]:
+        """When the emergency card was opened recently, newest first."""
+        data = self.store.get(EMERGENCY_CARDS, circle.card_id) if circle.card_id else None
+        opens = (data or {}).get("opens", [])
+        return sorted((datetime.fromisoformat(o) for o in opens), reverse=True)
+
+    def open_card(self, card_id: str, now: datetime | None = None) -> Circle | None:
+        """Resolve a public card link and note that it was opened. None if it is off."""
+        data = self.store.get(EMERGENCY_CARDS, card_id)
+        if data is None:
+            return None
+        try:
+            circle = self.get_circle(str(data.get("circle_id", "")))
+        except NotFound:
+            return None
+        if circle.card_id != card_id:  # replaced or turned off
+            return None
+        opens = [*data.get("opens", []), (now or datetime.now(UTC)).isoformat()]
+        self.store.put(EMERGENCY_CARDS, card_id, {**data, "opens": opens[-CARD_OPENS_KEPT:]})
+        return circle
 
     def list_circles(self) -> list[Circle]:
         return [Circle.model_validate(d) for d in self.store.list(CIRCLES)]

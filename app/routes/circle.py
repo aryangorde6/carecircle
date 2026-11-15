@@ -7,12 +7,14 @@ keeps the elder at the centre of their own healthcare decisions.
 from __future__ import annotations
 
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 
-from app.models import Access, Role
+from app.models import BLOOD_GROUPS, Access, Role
+from app.routes.card import card_url, qr_data_uri
 from app.security import validate_passcode
 from app.services.care import NotFound, PasscodeInUse, PermissionDenied
 from app.services.emailer import EmailFailed
@@ -24,6 +26,7 @@ router = APIRouter(prefix="/circle")
 @router.get("", response_class=HTMLResponse)
 def circle_page(request: Request, member: MemberDep, services: ServicesDep) -> HTMLResponse:
     circle = services.care.get_circle(member.circle_id)
+    url = card_url(services, circle) if circle.card_id else None
     return render(
         request,
         "circle.html",
@@ -32,6 +35,11 @@ def circle_page(request: Request, member: MemberDep, services: ServicesDep) -> H
         members=services.care.list_members(circle.id),
         new_circle=request.session.pop("new_circle", False),
         demo_passcodes=request.session.get("demo_passcodes") if circle.demo else None,
+        card_link=url,
+        card_qr=qr_data_uri(url) if url else None,
+        card_opens=services.care.card_opens(circle) if url else [],
+        blood_groups=BLOOD_GROUPS,
+        zone=ZoneInfo(circle.timezone),
     )
 
 

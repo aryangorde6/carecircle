@@ -24,6 +24,16 @@ DEMO_MEDICINES = (
     ("Atorvastatin", "10 mg, 1 tablet", "at bedtime", ["21:30"], 24),
 )
 
+# What Kamala's emergency card shows. The phone numbers are deliberately not real.
+DEMO_HEALTH = {
+    "blood_group": "B+",
+    "allergies": "Penicillin, sulfa drugs",
+    "conditions": "Type 2 diabetes, high blood pressure",
+    "emergency_contacts": (
+        "Ravi Kumar (caretaker) +91 55500 01234\nPriya Iyer (daughter) +91 55500 05678"
+    ),
+}
+
 # How Kamala said she felt (days ago -> feeling, note). Today is left for the visitor.
 DEMO_FEELINGS = {
     6: (Feeling.GOOD, ""),
@@ -158,4 +168,6 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
         starts_at=datetime.combine(today + timedelta(days=9), time(10, 30), tzinfo=zone),
         notes="",
     )
+    care.update_health_info(elder, **DEMO_HEALTH)
+    circle = care.enable_card(elder, now=current)
     return DemoCircle(circle=circle, elder=elder, passcodes=passcodes)

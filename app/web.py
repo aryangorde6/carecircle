@@ -43,6 +43,8 @@ class Services:
     ai: AiService
     login_limiter: RateLimiter
     ai_limiter: RateLimiter
+    public_limiter: RateLimiter  # per-IP limit on public pages such as the emergency card
+    alert_limiter: RateLimiter  # at most one "card opened" email per circle per window
     verify_task_token: Callable[[str], bool]
 
 

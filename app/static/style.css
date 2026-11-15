@@ -235,6 +235,30 @@ meter { width: 100%; height: 1.4rem; }
 .sheet section { break-inside: avoid; }
 .write-lines span { display: block; height: 2.2rem; border-bottom: 1px solid #8a877c; }
 
+/* Emergency card */
+.eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--danger); font-size: 0.85em; margin: 0; }
+.card-qr { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-start; margin: 1rem 0; }
+.card-qr img, .fridge-head img { background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.card-qr .stack { flex: 1 1 16rem; }
+.badge { display: inline-block; padding: 0.1rem 0.6rem; border-radius: 999px; font-weight: 700; font-size: 0.85em; }
+.badge-on { background: var(--brand-soft); color: var(--brand-dark); }
+.health-edit { margin-top: 1rem; }
+.health-edit summary { cursor: pointer; font-weight: 600; color: var(--brand-dark); padding: 0.4rem 0; }
+.emergency h1 { font-size: 2.2em; margin: 0.1em 0 0.3em; }
+.btn-emergency { background: var(--danger); color: #fff; font-size: 1.2em; padding: 0.8rem 1.4rem; border-radius: var(--radius); display: inline-block; text-decoration: none; font-weight: 700; }
+.btn-emergency:hover, .btn-emergency:focus-visible { background: #7f1d14; color: #fff; }
+.em-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+.em-facts > div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.75rem 1rem; }
+.em-facts dt { font-weight: 700; color: var(--muted); font-size: 0.9em; }
+.em-facts dd { margin: 0.2rem 0 0; font-size: 1.15em; font-weight: 600; }
+.em-facts .em-allergy { background: var(--danger-soft); border-color: var(--danger); }
+.em-facts .em-allergy dd { color: var(--danger); }
+.em-contacts { font-size: 1.15em; padding-left: 1.2rem; }
+.fridge-card { border: 3px solid var(--danger); border-radius: var(--radius); padding: 1.25rem 1.5rem; max-width: 46rem; background: var(--surface); }
+.fridge-head { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; }
+.fridge-head h1 { margin: 0.1em 0; font-size: 2em; }
+.break-all { word-break: break-all; }
+
 @media print {
   .site-header, .site-footer, .demo-banner, .messages, .no-print, .skip-link { display: none !important; }
   body { background: #fff; font-size: 12pt; line-height: 1.45; }
@@ -243,6 +267,7 @@ meter { width: 100%; height: 1.4rem; }
   .sheet h2 { font-size: 14pt; margin-top: 1em; }
   thead th { background: #eee; }
   a { color: inherit; text-decoration: none; }
+  .fridge-card { border-width: 4px; break-inside: avoid; }
 }
 
 @media (max-width: 56rem) {

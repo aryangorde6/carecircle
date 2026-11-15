@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Fridge card{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <p><a href="/circle#card"><span aria-hidden="true">←</span> Back to the circle</a></p>
+  <button type="button" class="btn btn-primary" data-print hidden>Print or save as PDF</button>
+</div>
+
+<article class="fridge-card" aria-labelledby="fc-title">
+  <div class="fridge-head">
+    <div>
+      <p class="eyebrow">In an emergency</p>
+      <h1 id="fc-title">{{ circle.elder_name }}</h1>
+      <p class="big"><strong>Call 112</strong>, then scan the code for medicines and contacts.</p>
+    </div>
+    <img src="{{ qr }}" alt="QR code that opens {{ circle.elder_name }}'s emergency card" width="220" height="220">
+  </div>
+  <dl class="em-facts">
+    <div class="em-allergy"><dt>Allergies</dt><dd>{{ circle.allergies or 'None recorded' }}</dd></div>
+    <div><dt>Blood group</dt><dd>{{ circle.blood_group or 'Not recorded' }}</dd></div>
+    <div><dt>Conditions</dt><dd>{{ circle.conditions or 'None recorded' }}</dd></div>
+  </dl>
+  <p><strong>Medicines today:</strong> {% for m in meds %}{{ m.name }}{% if m.dosage %} ({{ m.dosage }}){% endif %}{{ ', ' if not loop.last }}{% else %}none recorded{% endfor %}.</p>
+  <p class="hint">The code always shows the latest list. Link: <span class="break-all">{{ url }}</span></p>
+</article>
+{% endblock %}

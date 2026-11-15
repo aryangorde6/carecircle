@@ -13,6 +13,8 @@ TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 # Warn the circle when a medicine has this many days (or fewer) left.
 REFILL_DAYS = 5
 
+BLOOD_GROUPS = ("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+
 
 class Role(StrEnum):
     ELDER = "elder"
@@ -48,6 +50,20 @@ class Circle(BaseModel):
     timezone: str = "Asia/Kolkata"
     created_at: datetime
     demo: bool = False
+    # Shown on the emergency card. The elder decides whether the card is on.
+    blood_group: str = Field(default="", max_length=3)
+    allergies: str = Field(default="", max_length=200)
+    conditions: str = Field(default="", max_length=200)
+    emergency_contacts: str = Field(default="", max_length=300)
+    # Random id in the public emergency-card link; None while the card is off.
+    card_id: str | None = None
+
+    @field_validator("blood_group")
+    @classmethod
+    def _known_blood_group(cls, value: str) -> str:
+        if value and value not in BLOOD_GROUPS:
+            raise ValueError("unknown blood group")
+        return value
 
 
 class Member(BaseModel):
