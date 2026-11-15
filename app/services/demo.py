@@ -84,6 +84,7 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
     past_today = sorted(item for item in due_today if item[0] <= local_now)
     left_open = past_today[-1] if past_today else None
 
+    history: list[DoseLog] = []
     for days_ago in range(7, -1, -1):
         day = today - timedelta(days=days_ago)
         for med in meds:
@@ -97,7 +98,7 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
                     continue
                 status = DEMO_GAPS.get(key) or DoseStatus.TAKEN
                 marker = caretaker if (days_ago + hour) % 3 == 0 else elder
-                care.save_dose_log(
+                history.append(
                     DoseLog(
                         id=dose_log_id(med.id, when),
                         circle_id=circle.id,
@@ -110,6 +111,7 @@ def create_demo_circle(care: CareService, now: datetime | None = None) -> DemoCi
                         reminders_sent=["upcoming", "missed", "escalated"],
                     )
                 )
+    care.save_dose_logs(history)  # one batch write instead of ~30 separate ones
 
     care.save_appointment(
         elder,

@@ -10,6 +10,9 @@ from google.cloud import firestore
 
 from app.store import Document
 
+# Firestore accepts at most 500 writes in one batch.
+_BATCH_LIMIT = 500
+
 
 class FirestoreStore:
     """Document store backed by Cloud Firestore (Native mode)."""
@@ -23,6 +26,15 @@ class FirestoreStore:
 
     def put(self, collection: str, doc_id: str, data: Document) -> None:
         self._client.collection(collection).document(doc_id).set(data)
+
+    def put_many(self, collection: str, docs: dict[str, Document]) -> None:
+        items = list(docs.items())
+        ref = self._client.collection(collection)
+        for start in range(0, len(items), _BATCH_LIMIT):
+            batch = self._client.batch()
+            for doc_id, data in items[start : start + _BATCH_LIMIT]:
+                batch.set(ref.document(doc_id), data)
+            batch.commit()
 
     def delete(self, collection: str, doc_id: str) -> None:
         self._client.collection(collection).document(doc_id).delete()

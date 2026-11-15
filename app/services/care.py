@@ -7,6 +7,7 @@ circle can never reach another circle's data.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
@@ -84,6 +85,27 @@ class Adherence:
         if self.expected == 0:
             return None
         return round(100 * self.taken / self.expected)
+
+
+def summarise_adherence(
+    doses: Iterable[ScheduledDose], now: datetime, grace_minutes: int = 60
+) -> tuple[Adherence, dict[str, Adherence]]:
+    """Count taken, skipped and missed doses, overall and per medication.
+
+    A dose with no log counts as missed once ``grace_minutes`` have passed;
+    doses still inside that window are not counted yet.
+    """
+    cutoff = now - timedelta(minutes=grace_minutes)
+    totals = {"taken": 0, "skipped": 0, "missed": 0}
+    per_med: dict[str, dict[str, int]] = {}
+    for dose in doses:
+        if dose.status is None and dose.scheduled_for > cutoff:
+            continue
+        key = dose.status.value if dose.status else "missed"
+        totals[key] += 1
+        bucket = per_med.setdefault(dose.medication.name, {"taken": 0, "skipped": 0, "missed": 0})
+        bucket[key] += 1
+    return Adherence(**totals), {name: Adherence(**c) for name, c in per_med.items()}
 
 
 class CareService:
@@ -267,25 +289,36 @@ class CareService:
 
     # ----- doses and adherence --------------------------------------------
 
-    def schedule_for_day(self, circle: Circle, day: date) -> list[ScheduledDose]:
-        """All doses expected on a local calendar day, with their logs."""
+    def schedule_for_days(self, circle: Circle, start: date, end: date) -> list[ScheduledDose]:
+        """All doses expected on the local days ``start``..``end``, with their logs.
+
+        Medicines and dose logs are read once, however long the range is.
+        """
         zone = ZoneInfo(circle.timezone)
         logs = {d["id"]: DoseLog.model_validate(d) for d in self.store.list(_doses(circle.id))}
+        meds = self.list_medications(circle.id)
         doses: list[ScheduledDose] = []
-        for med in self.list_medications(circle.id):
-            if not med.is_scheduled_on(day):
-                continue
-            for slot in med.times:
-                hour, minute = (int(part) for part in slot.split(":"))
-                when = datetime.combine(day, time(hour, minute), tzinfo=zone)
-                doses.append(
-                    ScheduledDose(
-                        medication=med,
-                        scheduled_for=when,
-                        log=logs.get(dose_log_id(med.id, when)),
+        day = start
+        while day <= end:
+            for med in meds:
+                if not med.is_scheduled_on(day):
+                    continue
+                for slot in med.times:
+                    hour, minute = (int(part) for part in slot.split(":"))
+                    when = datetime.combine(day, time(hour, minute), tzinfo=zone)
+                    doses.append(
+                        ScheduledDose(
+                            medication=med,
+                            scheduled_for=when,
+                            log=logs.get(dose_log_id(med.id, when)),
+                        )
                     )
-                )
+            day += timedelta(days=1)
         return sorted(doses, key=lambda d: (d.scheduled_for, d.medication.name.lower()))
+
+    def schedule_for_day(self, circle: Circle, day: date) -> list[ScheduledDose]:
+        """All doses expected on one local calendar day, with their logs."""
+        return self.schedule_for_days(circle, day, day)
 
     def record_dose(
         self,
@@ -325,29 +358,18 @@ class CareService:
     def save_dose_log(self, log: DoseLog) -> None:
         self.store.put(_doses(log.circle_id), log.id, log.model_dump(mode="json"))
 
+    def save_dose_logs(self, logs: list[DoseLog]) -> None:
+        """Save many dose logs of one circle in a single batch write."""
+        if logs:
+            self.store.put_many(
+                _doses(logs[0].circle_id), {log.id: log.model_dump(mode="json") for log in logs}
+            )
+
     def adherence(
         self, circle: Circle, start: date, end: date, now: datetime, grace_minutes: int = 60
     ) -> tuple[Adherence, dict[str, Adherence]]:
-        """Overall and per-medication adherence for doses due before ``now``.
-
-        A dose with no log counts as missed once ``grace_minutes`` have passed.
-        """
-        cutoff = now - timedelta(minutes=grace_minutes)
-        totals = {"taken": 0, "skipped": 0, "missed": 0}
-        per_med: dict[str, dict[str, int]] = {}
-        day = start
-        while day <= end:
-            for dose in self.schedule_for_day(circle, day):
-                if dose.status is None and dose.scheduled_for > cutoff:
-                    continue
-                key = dose.status.value if dose.status else "missed"
-                totals[key] += 1
-                bucket = per_med.setdefault(
-                    dose.medication.name, {"taken": 0, "skipped": 0, "missed": 0}
-                )
-                bucket[key] += 1
-            day += timedelta(days=1)
-        return Adherence(**totals), {name: Adherence(**c) for name, c in per_med.items()}
+        """Overall and per-medication adherence for doses due before ``now``."""
+        return summarise_adherence(self.schedule_for_days(circle, start, end), now, grace_minutes)
 
     # ----- appointments ----------------------------------------------------
 

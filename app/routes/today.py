@@ -10,7 +10,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.models import DoseStatus
-from app.services.care import NotFound, PermissionDenied
+from app.services.care import NotFound, PermissionDenied, summarise_adherence
 from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
 
 router = APIRouter()
@@ -23,8 +23,10 @@ def today(request: Request, member: MemberDep, services: ServicesDep) -> HTMLRes
     zone = ZoneInfo(circle.timezone)
     now = datetime.now(UTC)
     local_today = now.astimezone(zone).date()
-    doses = care.schedule_for_day(circle, local_today)
-    week, _ = care.adherence(circle, local_today - timedelta(days=6), local_today, now)
+    # One read of the last 7 days serves both today's list and the weekly figure.
+    week_doses = care.schedule_for_days(circle, local_today - timedelta(days=6), local_today)
+    doses = [d for d in week_doses if d.scheduled_for.astimezone(zone).date() == local_today]
+    week, _ = summarise_adherence(week_doses, now)
     appointments = care.list_appointments(circle.id, upcoming_from=now)[:3]
     pending = [d for d in doses if d.status is None]
     return render(

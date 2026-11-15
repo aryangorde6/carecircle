@@ -63,18 +63,19 @@
 <section aria-labelledby="people-title">
   <h2 id="people-title">People</h2>
   <div class="table-wrap">
-  <table>
+  {# Explicit roles keep table semantics when phones restyle the rows as cards. #}
+  <table class="stack-table" role="table">
     <caption class="visually-hidden">People in this circle and what they can do</caption>
-    <thead><tr><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Can</th><th scope="col">Email reminders</th>{% if member.is_elder %}<th scope="col">Change</th>{% endif %}</tr></thead>
-    <tbody>
+    <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Name</th><th scope="col" role="columnheader">Role</th><th scope="col" role="columnheader">Can</th><th scope="col" role="columnheader">Email reminders</th>{% if member.is_elder %}<th scope="col" role="columnheader">Change</th>{% endif %}</tr></thead>
+    <tbody role="rowgroup">
     {% for p in members %}
-      <tr>
-        <th scope="row">{{ p.name }}{% if p.id == member.id %} (you){% endif %}</th>
-        <td>{{ p.role.value|capitalize }}</td>
-        <td>{{ 'View and edit' if p.can_edit else 'View only' }}</td>
-        <td>{{ 'Yes' if p.email else 'No email' }}</td>
+      <tr role="row">
+        <th scope="row" role="rowheader">{{ p.name }}{% if p.id == member.id %} (you){% endif %}</th>
+        <td role="cell" data-label="Role">{{ p.role.value|capitalize }}</td>
+        <td role="cell" data-label="Can">{{ 'View and edit' if p.can_edit else 'View only' }}</td>
+        <td role="cell" data-label="Email">{{ 'Yes' if p.email else 'No email' }}</td>
         {% if member.is_elder %}
-        <td>
+        <td role="cell" data-label="Change">
           {% if not p.is_elder %}
           <div class="actions">
             <form method="post" action="/circle/members/{{ p.id }}/access">

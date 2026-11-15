@@ -21,6 +21,10 @@ class DocumentStore(Protocol):
 
     def put(self, collection: str, doc_id: str, data: Document) -> None: ...
 
+    def put_many(self, collection: str, docs: dict[str, Document]) -> None:
+        """Write several documents in one round trip (a batch in Firestore)."""
+        ...
+
     def delete(self, collection: str, doc_id: str) -> None: ...
 
     def list(self, collection: str) -> list[Document]: ...
@@ -43,6 +47,12 @@ class InMemoryStore:
     def put(self, collection: str, doc_id: str, data: Document) -> None:
         with self._lock:
             self._data.setdefault(collection, {})[doc_id] = copy.deepcopy(data)
+
+    def put_many(self, collection: str, docs: dict[str, Document]) -> None:
+        with self._lock:
+            target = self._data.setdefault(collection, {})
+            for doc_id, data in docs.items():
+                target[doc_id] = copy.deepcopy(data)
 
     def delete(self, collection: str, doc_id: str) -> None:
         with self._lock:

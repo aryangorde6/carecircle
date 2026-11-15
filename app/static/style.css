@@ -81,6 +81,7 @@ main:focus { outline: none; }
 
 /* Buttons */
 .btn, .btn-ghost {
+  position: relative; /* keeps screen-reader-only text inside the button box */
   display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   min-height: 48px; min-width: 48px; padding: 0.6rem 1.2rem;
   font: inherit; font-weight: 600; border-radius: var(--radius); cursor: pointer;
@@ -115,8 +116,33 @@ button[disabled] { opacity: 0.7; cursor: progress; }
 .lead { font-size: 1.15em; max-width: 46rem; }
 .big { font-size: 1.35em; font-weight: 600; }
 
+.hero {
+  display: grid; gap: 2rem; align-items: center;
+  grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 1fr);
+}
 .hero h1 { font-size: 2.3em; max-width: 40rem; }
-.feature-list { padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.ladder { margin: 1.5rem 0 0; border-top: 6px solid var(--brand); }
+.ladder-title { margin-top: 0; font-size: 1.15em; }
+.ladder-steps { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.8rem; counter-reset: step; }
+.ladder-steps li { display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.8rem; align-items: start; }
+.ladder-steps li::before {
+  counter-increment: step; content: counter(step);
+  display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%;
+  font-weight: 700; background: var(--brand-soft); color: var(--brand-dark);
+}
+.ladder-steps li:nth-child(2)::before { background: var(--warn-soft); color: var(--warn); }
+.ladder-steps li:nth-child(3)::before { background: var(--danger-soft); color: var(--danger); }
+.ladder-when { margin: 0; font-weight: 700; }
+.ladder-who { margin: 0; color: var(--muted); }
+.feature-grid {
+  list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+.feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+.feature h3 { margin: 0.5rem 0 0.25rem; font-size: 1.05em; }
+.feature p { margin: 0; color: var(--muted); font-size: 0.95em; }
+.feature-icon { font-size: 1.7em; line-height: 1; }
+.grid-top { align-items: start; margin-top: 1.5rem; }
 
 /* Demo */
 .demo-banner { background: var(--warn-soft); border-bottom: 1px solid #e8c48f; }
@@ -165,7 +191,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--focus); }
 /* Circle */
 .code-card { text-align: center; }
 .circle-code { font-size: 2.4em; font-weight: 800; letter-spacing: 0.25em; font-family: ui-monospace, monospace; }
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; position: relative; }
 table { width: 100%; border-collapse: collapse; background: var(--surface); }
 th, td { text-align: left; padding: 0.7rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 thead th { background: var(--brand-soft); }
@@ -181,6 +207,10 @@ thead th { background: var(--brand-soft); }
 meter { width: 100%; height: 1.4rem; }
 .summary-text { font-size: 1.1em; white-space: pre-line; }
 .stopped { margin-top: 2rem; }
+
+@media (max-width: 56rem) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
 
 @media (max-width: 40rem) {
   body { font-size: calc(var(--base) * 0.95); }
@@ -199,6 +229,17 @@ meter { width: 100%; height: 1.4rem; }
   .dose-actions form { justify-content: flex-start; }
   .bar-list li { grid-template-columns: 1fr; gap: 0.2rem; }
   .bar-list li > :last-child { text-align: left; }
+  /* The people table becomes one card per person on phones. */
+  .stack-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .stack-table, .stack-table tbody, .stack-table tr, .stack-table th, .stack-table td { display: block; width: 100%; }
+  .stack-table { background: transparent; }
+  .stack-table tr {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 0.6rem 1rem; margin-bottom: 0.75rem;
+  }
+  .stack-table th[scope="row"] { border: 0; padding: 0.2rem 0 0.4rem; font-size: 1.1em; }
+  .stack-table td { border: 0; padding: 0.2rem 0; display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0.5rem; }
+  .stack-table td::before { content: attr(data-label); font-weight: 600; color: var(--muted); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -206,5 +247,6 @@ meter { width: 100%; height: 1.4rem; }
 }
 
 @media (forced-colors: active) {
-  .btn, .btn-ghost, .dose { border: 2px solid CanvasText; }
+  .btn, .btn-ghost, .dose, .feature { border: 2px solid CanvasText; }
+  .ladder-steps li::before { border: 2px solid CanvasText; }
 }

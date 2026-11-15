@@ -124,13 +124,13 @@ Built to WCAG 2.1 AA: semantic landmarks, a skip link, one `h1` per page, a labe
 
 ## Efficiency
 
-Server-rendered pages with one small CSS file and one small script, gzip compression and cached static files. Reminder runs read each circle once and batch all due doses of the same stage into a single email per recipient group. Gemini is called only on explicit user action, with low token limits.
+Server-rendered pages with one small CSS file and one small script, gzip compression and cached static files. Each page reads a circle's medicines and dose history once, however many days it covers (30-day adherence is one Firestore query, not thirty; tests pin the read counts), and a new demo circle writes its week of history in a single batch. Reminder runs read each circle once and batch all due doses of the same stage into a single email per recipient group. Gemini is called only on explicit user action, with low token limits.
 
 ## Testing
 
 ```bash
 uv sync
-uv run pytest          # 48 tests, ~89% coverage
+uv run pytest          # 51 tests, ~89% coverage
 uv run ruff check .    # lint
 uv run pip-audit -r requirements.txt
 ```

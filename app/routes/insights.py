@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.models import Circle
 from app.services.ai import AiUnavailable, WeeklySummary
-from app.services.care import CareService
+from app.services.care import CareService, summarise_adherence
 from app.services.emailer import EmailFailed
 from app.web import CsrfDep, MemberDep, ServicesDep, flash, redirect, render
 
@@ -24,16 +24,14 @@ def _summaries(circle_id: str) -> str:
 def build_week_facts(care: CareService, circle: Circle, today: date, now: datetime) -> str:
     """Plain-text facts about the last 7 days, used as the model's only input."""
     start = today - timedelta(days=6)
-    overall, per_med = care.adherence(circle, start, today, now)
+    doses = care.schedule_for_days(circle, start, today)
+    overall, per_med = summarise_adherence(doses, now)
     zone = ZoneInfo(circle.timezone)
     missed_by_hour: dict[str, int] = {}
-    day = start
-    while day <= today:
-        for dose in care.schedule_for_day(circle, day):
-            if dose.status is None and dose.scheduled_for < now - timedelta(hours=1):
-                slot = dose.scheduled_for.astimezone(zone).strftime("%H:%M")
-                missed_by_hour[slot] = missed_by_hour.get(slot, 0) + 1
-        day += timedelta(days=1)
+    for dose in doses:
+        if dose.status is None and dose.scheduled_for < now - timedelta(hours=1):
+            slot = dose.scheduled_for.astimezone(zone).strftime("%H:%M")
+            missed_by_hour[slot] = missed_by_hour.get(slot, 0) + 1
     percent = overall.percent if overall.percent is not None else "n/a"
     lines = [
         f"Person: {circle.elder_name}",
@@ -62,9 +60,14 @@ def insights(request: Request, member: MemberDep, services: ServicesDep) -> HTML
     care = services.care
     circle = care.get_circle(member.circle_id)
     now = datetime.now(UTC)
-    today = now.astimezone(ZoneInfo(circle.timezone)).date()
-    week, week_per_med = care.adherence(circle, today - timedelta(days=6), today, now)
-    month, _ = care.adherence(circle, today - timedelta(days=29), today, now)
+    zone = ZoneInfo(circle.timezone)
+    today = now.astimezone(zone).date()
+    # One read of the last 30 days; the 7-day figures are a slice of it.
+    month_doses = care.schedule_for_days(circle, today - timedelta(days=29), today)
+    week_start = today - timedelta(days=6)
+    week_doses = [d for d in month_doses if d.scheduled_for.astimezone(zone).date() >= week_start]
+    week, week_per_med = summarise_adherence(week_doses, now)
+    month, _ = summarise_adherence(month_doses, now)
     saved = care.store.get(_summaries(circle.id), "latest")
     return render(
         request,

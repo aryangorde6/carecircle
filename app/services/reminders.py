@@ -98,10 +98,7 @@ class ReminderService:
         }
 
         local_today = now.astimezone(ZoneInfo(circle.timezone)).date()
-        doses = [
-            *self.care.schedule_for_day(circle, local_today - timedelta(days=1)),
-            *self.care.schedule_for_day(circle, local_today),
-        ]
+        doses = self.care.schedule_for_days(circle, local_today - timedelta(days=1), local_today)
         due: dict[str, list[ScheduledDose]] = {}
         for dose in doses:
             stage = dose_stage(dose, now)
