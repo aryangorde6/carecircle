@@ -34,6 +34,7 @@ class Circle(BaseModel):
     elder_name: str = Field(min_length=1, max_length=80)
     timezone: str = "Asia/Kolkata"
     created_at: datetime
+    demo: bool = False
 
 
 class Member(BaseModel):

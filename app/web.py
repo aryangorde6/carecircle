@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,17 @@ from app.services.care import CareService, NotFound
 from app.services.reminders import ReminderService
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+def _asset_version() -> str:
+    """Short content hash so browsers fetch new CSS/JS after each deploy."""
+    digest = hashlib.sha256()
+    for path in sorted((Path(__file__).parent / "static").glob("*")):
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:10]
+
+
+TEMPLATES.env.globals["asset_version"] = _asset_version()
 
 
 @dataclass

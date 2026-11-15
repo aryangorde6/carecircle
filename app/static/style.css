@@ -118,6 +118,12 @@ button[disabled] { opacity: 0.7; cursor: progress; }
 .hero h1 { font-size: 2.3em; max-width: 40rem; }
 .feature-list { padding-left: 1.2rem; display: grid; gap: 0.5rem; }
 
+/* Demo */
+.demo-banner { background: var(--warn-soft); border-bottom: 1px solid #e8c48f; }
+.demo-banner p { margin: 0; padding: 0.5rem 0; font-size: 0.95em; }
+.demo-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin: 1.25rem 0 0.5rem; }
+code { font-family: ui-monospace, monospace; background: var(--brand-soft); padding: 0.1rem 0.4rem; border-radius: 6px; }
+
 /* Forms */
 .field { display: grid; gap: 0.3rem; border: 0; padding: 0; margin: 0; }
 label, legend { font-weight: 600; }
@@ -126,6 +132,8 @@ input, select, textarea {
   border: 2px solid #8a877c; border-radius: 10px; padding: 0.6rem 0.8rem; min-height: 48px; width: 100%;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--focus); }
+.check { display: flex; align-items: center; gap: 0.6rem; }
+.check input { width: 1.5rem; height: 1.5rem; min-height: 0; accent-color: var(--brand); }
 .times { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .time-field input { width: 9rem; }
 
@@ -174,7 +182,17 @@ meter { width: 100%; height: 1.4rem; }
 .stopped { margin-top: 2rem; }
 
 @media (max-width: 40rem) {
+  body { font-size: calc(var(--base) * 0.95); }
   h1 { font-size: 1.6em; }
+  .main-nav { flex-direction: column; align-items: stretch; }
+  .main-nav ul { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 0.25rem; }
+  .main-nav a { padding: 0.5rem 0.75rem; white-space: nowrap; }
+  .logout { justify-content: space-between; }
+  .big { font-size: 1.2em; }
+  .card { padding: 1rem 1.1rem; }
+  .circle-code { font-size: 1.8em; letter-spacing: 0.15em; }
+  .page-head .actions, .page-head > .btn { width: 100%; }
+  .page-head .btn { flex: 1 1 auto; }
   .hero h1 { font-size: 1.8em; }
   .dose { grid-template-columns: 1fr; }
   .dose-actions form { justify-content: flex-start; }

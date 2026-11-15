@@ -6,6 +6,11 @@
   <p class="lead">One shared, passcode-protected care profile for an elder, their caretakers and family.
     Gentle reminders first, then the family is told only if a dose is really missed.
     The elder decides who can see and change what.</p>
+  <form method="post" action="/demo" class="demo-cta">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-primary btn-big">Try a demo circle</button>
+    <span class="hint">One click. A private circle with a week of sample data, no sign-up.</span>
+  </form>
 </section>
 
 <div class="grid-2">

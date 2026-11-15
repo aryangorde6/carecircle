@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="CareCircle helps elders, caretakers and family manage medicines and doctor appointments together.">
   <title>{% block title %}CareCircle{% endblock %} · CareCircle</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v={{ asset_version }}" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -40,6 +40,11 @@
     {% endif %}
   </header>
 
+  {% if circle and circle.demo %}
+  <div class="demo-banner" role="note">
+    <p class="wrap">Demo circle with sample data. It is private to you. <a href="/circle#demo">Try other roles</a></p>
+  </div>
+  {% endif %}
   <main id="main" class="wrap" tabindex="-1">
     <div class="messages" role="status" aria-live="polite">
       {% for m in messages %}

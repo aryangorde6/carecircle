@@ -13,6 +13,53 @@
   {% endif %}
 </section>
 
+{% if demo_passcodes %}
+<section class="card" id="demo" aria-labelledby="demo-title">
+  <h2 id="demo-title">Try the other roles</h2>
+  <p>Sign out, then open this circle as someone else to see how access changes. Circle code: <strong>{{ circle.id }}</strong></p>
+  <div class="table-wrap">
+  <table>
+    <caption class="visually-hidden">Demo passcodes</caption>
+    <thead><tr><th scope="col">Person</th><th scope="col">What they can do</th><th scope="col">Demo passcode</th></tr></thead>
+    <tbody>
+      {% for p in members %}
+      <tr>
+        <th scope="row">{{ p.name }}</th>
+        <td>{{ p.role.value|capitalize }}, {{ 'view and edit' if p.can_edit else 'view only' }}</td>
+        <td><code>{{ demo_passcodes.get(p.name, '(set by you)') }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" id="me" aria-labelledby="me-title">
+  <h2 id="me-title">Your reminders</h2>
+  <form method="post" action="/circle/me" class="stack form-narrow">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="my-email">Your email</label>
+      <input id="my-email" name="email" type="email" maxlength="254" autocomplete="email" value="{{ member.email or '' }}" aria-describedby="my-email-help">
+      <p id="my-email-help" class="hint">Reminders and missed-dose alerts for your role are sent here.</p>
+    </div>
+    <div class="check">
+      <input id="my-notify" name="notify" type="checkbox" {% if member.notify %}checked{% endif %}>
+      <label for="my-notify">Send me email reminders</label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+  {% if member.email %}
+  <form method="post" action="/circle/test-email" class="actions">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <button type="submit" class="btn btn-secondary">Send me a test email</button>
+  </form>
+  {% endif %}
+</section>
+
 <section aria-labelledby="people-title">
   <h2 id="people-title">People</h2>
   <div class="table-wrap">

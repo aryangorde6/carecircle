@@ -101,6 +101,7 @@ class CareService:
         timezone: str,
         email: str | None = None,
         now: datetime | None = None,
+        demo: bool = False,
     ) -> tuple[Circle, Member]:
         """Create a circle with the elder as its first member and owner."""
         ZoneInfo(timezone)  # raises for unknown zones
@@ -108,7 +109,11 @@ class CareService:
         while self.store.get(CIRCLES, code) is not None:
             code = new_circle_code()
         circle = Circle(
-            id=code, elder_name=elder_name, timezone=timezone, created_at=now or datetime.now(UTC)
+            id=code,
+            elder_name=elder_name,
+            timezone=timezone,
+            created_at=now or datetime.now(UTC),
+            demo=demo,
         )
         self.store.put(CIRCLES, circle.id, circle.model_dump(mode="json"))
         elder = self._save_member(circle.id, elder_name, Role.ELDER, Access.EDIT, email, passcode)
@@ -169,6 +174,15 @@ class CareService:
         member.access = access
         self.store.put(_members(actor.circle_id), member.id, member.model_dump(mode="json"))
         return member
+
+    def update_own_contact(self, actor: Member, email: str | None, notify: bool) -> Member:
+        """Any member may change their own reminder email and opt in or out."""
+        member = self.get_member(actor.circle_id, actor.id)
+        updated = Member.model_validate(
+            {**member.model_dump(), "email": email or None, "notify": notify}
+        )
+        self.store.put(_members(actor.circle_id), updated.id, updated.model_dump(mode="json"))
+        return updated
 
     def remove_member(self, actor: Member, member_id: str) -> None:
         if not actor.is_elder:

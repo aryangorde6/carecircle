@@ -30,7 +30,49 @@ def circle_page(request: Request, member: MemberDep, services: ServicesDep) -> H
         circle=circle,
         members=services.care.list_members(circle.id),
         new_circle=request.session.pop("new_circle", False),
+        demo_passcodes=request.session.get("demo_passcodes") if circle.demo else None,
     )
+
+
+@router.post("/me")
+def update_my_contact(
+    request: Request,
+    member: MemberDep,
+    services: ServicesDep,
+    _csrf: CsrfDep,
+    email: Annotated[str, Form(max_length=254)] = "",
+    notify: Annotated[str, Form(max_length=5)] = "",
+) -> RedirectResponse:
+    try:
+        services.care.update_own_contact(member, email.strip() or None, notify == "on")
+    except ValidationError:
+        flash(request, "Please check the email address.", "error")
+    else:
+        flash(request, "Your reminder settings were saved.", "success")
+    return redirect("/circle#me")
+
+
+@router.post("/test-email")
+def send_test_email(
+    request: Request, member: MemberDep, services: ServicesDep, _csrf: CsrfDep
+) -> RedirectResponse:
+    """Send the signed-in member a sample reminder, to check delivery."""
+    if not member.email:
+        flash(request, "Add your email address first.", "error")
+        return redirect("/circle#me")
+    if not services.ai_limiter.hit(f"test-email:{member.circle_id}:{member.id}"):
+        flash(request, "A test email was sent recently. Please wait a little.", "error")
+        return redirect("/circle#me")
+    circle = services.care.get_circle(member.circle_id)
+    services.reminders.emailer.send(
+        [str(member.email)],
+        f"CareCircle test reminder for {circle.elder_name}'s circle",
+        f"Hello {member.name},\n\nThis is a test from CareCircle. Reminder emails for "
+        f"{circle.elder_name}'s medicines and appointments will arrive like this one.\n\n"
+        f"Open CareCircle: {services.settings.public_base_url}/today",
+    )
+    flash(request, f"Test email sent to {member.email}. Check your inbox (and spam).", "success")
+    return redirect("/circle#me")
 
 
 @router.post("/members")

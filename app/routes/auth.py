@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
 from app.security import normalise_circle_code, validate_passcode
+from app.services.demo import create_demo_circle
 from app.web import CsrfDep, ServicesDep, client_ip, flash, redirect, render
 
 router = APIRouter()
@@ -74,6 +75,24 @@ def create_circle(
     _start_session(request, circle.id, elder.id)
     request.session["new_circle"] = True
     return redirect("/circle")
+
+
+@router.post("/demo")
+def start_demo(request: Request, services: ServicesDep, _csrf: CsrfDep) -> RedirectResponse:
+    """Create a fresh, private demo circle with sample data and sign in as the elder."""
+    if not services.login_limiter.hit(f"demo:{client_ip(request)}"):
+        flash(request, "Too many demo circles just now. Please wait a few minutes.", "error")
+        return redirect("/")
+    demo = create_demo_circle(services.care)
+    _start_session(request, demo.circle.id, demo.elder.id)
+    request.session["demo_passcodes"] = demo.passcodes
+    flash(
+        request,
+        "Welcome to a demo circle with a week of sample data. You are signed in as Kamala, "
+        "the elder. Try marking a dose, scanning a prescription or writing the weekly summary.",
+        "success",
+    )
+    return redirect("/today")
 
 
 @router.post("/login")
