@@ -7,8 +7,13 @@ Most reminder apps nag one person. CareCircle treats medication as a team effort
 - **Live app:** https://carecircle-641776536530.asia-south1.run.app (click **Try a demo circle** for a private circle with a week of sample data, no sign-up)
 - **Stack:** Python · FastAPI · Jinja2 · Cloud Firestore · Gemini on Vertex AI · Cloud Scheduler · Secret Manager · Cloud Logging · Cloud Run
 
-| Today, for the elder | Weekly family update by Gemini | On a phone |
+| Today, the elder's care book | Weekly family update by Gemini | On a phone |
 |---|---|---|
+| ![Today screen in the passbook style: a running-low notice, then the day's medicines as entries in Time, Medicine and Entry columns; the taken dose carries a violet TAKEN 08:40 AM rubber stamp and the overdue Amlodipine row is lit amber with a Due now label and I took it and Skip buttons](docs/today.jpg) | ![Insights: adherence for each medicine, how the elder felt each day this week, and a Gemini-written weekly family update](docs/insights.jpg) | ![The Today screen on a 375-pixel-wide phone: passbook-blue header with section tabs, large summary and Read aloud button](docs/mobile.jpg) |
+| **Emergency fridge card (opened from the QR code)** | **The weekly update in Hindi** | **Doctor-visit sheet** |
+| ![Public emergency card on a phone: Kamala Iyer, a large Call 112 button, allergies highlighted in red, blood group, health conditions and the current medicines](docs/card.jpg) | ![Weekly family update written by Gemini in Hindi, mentioning the dizzy morning, with questions for the doctor in Hindi and a language menu](docs/hindi-summary.jpg) | ![Printable visit sheet for the cardiologist: current medicines with 30-day adherence for each, and how the elder has felt over two weeks](docs/visit-sheet.jpg) |
+
+---|---|---|
 | ![Today screen: large text summary saying one dose is not taken yet, a Read aloud button and the day's medicines](docs/today.jpg) | ![Insights: 7- and 30-day adherence, a bar per medicine and a Gemini-written weekly summary with questions for the doctor](docs/insights.jpg) | ![The Today screen on a 375-pixel-wide phone, with the same large text and buttons](docs/mobile.jpg) |
 | **"How are you feeling today?"** | **The weekly update in Hindi** | **Doctor-visit sheet** |
 | ![Daily check-in card with a note box, a tick box to email caretakers and family only if the elder chooses, and three large buttons: Good, Okay, Not well](docs/checkin.jpg) | ![Weekly family update written by Gemini in Hindi, mentioning the dizzy morning, with questions for the doctor in Hindi and a language menu](docs/hindi-summary.jpg) | ![Printable visit sheet for the cardiologist: current medicines with 30-day adherence for each, and how the elder has felt over two weeks](docs/visit-sheet.jpg) |
