@@ -82,7 +82,7 @@ a:hover { color: var(--stamp); text-decoration-thickness: 2px; }
 }
 
 /* Figures are printed, like a passbook entry: times, counts, balances, percentages. */
-.dose-time, .stat-number, .bar-value, .circle-code, .ladder-when, .supply, code, .figure {
+.dose-time, .stat-number, .bar-value, .circle-code, .ladder-when, code, .figure {
   font-family: var(--mono); font-variant-numeric: tabular-nums slashed-zero;
 }
 
